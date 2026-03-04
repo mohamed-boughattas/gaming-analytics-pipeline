@@ -39,7 +39,7 @@ graph LR
     end
     
     subgraph "Visualization Layer"
-        N[Evidence Dashboard]
+        N[Marimo Dashboard]
         O[Charts & Metrics]
     end
     
@@ -149,7 +149,7 @@ graph LR
 
 ### 5. Visualization Phase
 
-**Tool**: Evidence.dev
+**Tool**: Marimo
 **Pages**:
 
 - `index.md`: Overview dashboard with quick stats
@@ -201,7 +201,7 @@ rawg_platforms
 - `load_to_duckdb`: Store data in database
 - `run_transformations`: Execute SQLMesh models
 - `validate_data`: Run Soda checks
-- `update_dashboard`: Refresh Evidence.dev
+- `update_dashboard`: Refresh Marimo dashboard
 
 ## Data Freshness
 
@@ -219,7 +219,7 @@ See `docs/data-retention.md` for retention policies.
 
 1. Check if staging tables have data: `python main.py status`
 2. Verify transformations ran successfully
-3. Check Evidence dashboard build logs
+3. Check Marimo dashboard build logs
 
 ### Quality Check Failures
 
