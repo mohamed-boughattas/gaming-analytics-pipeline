@@ -100,10 +100,8 @@ venv.bak/
 # mkdocs documentation
 /site
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# Ruff
+.ruff_cache/
 
 # Pyre type checker
 .pyre/
@@ -141,7 +139,3 @@ prefect.db
 # Soda Core
 .soda/
 soda_*.log
-
-# Evidence
-.evidence/
-evidence.db
