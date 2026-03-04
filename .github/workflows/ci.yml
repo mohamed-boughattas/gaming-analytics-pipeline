@@ -90,7 +90,7 @@ jobs:
         run: |
           docker build -t gaming-analytics-pipeline:${{ github.sha }} \
             -t gaming-analytics-pipeline:latest \
-            -f docker/Dockerfile .
+            -f Dockerfile .
 
       - name: Test Docker image
         run: |
@@ -100,11 +100,14 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
