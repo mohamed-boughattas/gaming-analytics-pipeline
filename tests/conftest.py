@@ -97,7 +97,7 @@ def api_keys_available() -> bool:
 
 @pytest.fixture
 def mock_rawg_extractor():
-    """Mock RAWG extractor for testing."""
+    """Mock RAWG extractor for testing with cleanup."""
     from gaming_pipeline.extract.rawg import RAWGExtractor
 
     class MockRAWGExtractor(RAWGExtractor):
@@ -122,4 +122,15 @@ def mock_rawg_extractor():
             ]
             yield sample_games
 
-    return MockRAWGExtractor()
+    # Provide the mock extractor
+    yield MockRAWGExtractor()
+
+    # Cleanup: drop pending packages to avoid state pollution between tests
+    import dlt
+
+    try:
+        pipeline = dlt.pipeline("gaming_analytics")
+        pipeline.drop_pending_packages()
+    except Exception:
+        # Ignore cleanup errors - pipeline may not exist
+        pass
