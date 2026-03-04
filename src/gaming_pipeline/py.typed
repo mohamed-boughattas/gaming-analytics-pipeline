@@ -1,0 +1,3 @@
+# Marker file for PEP 561 compliance
+# This file signals that the gaming_pipeline package supports type hints
+# and allows external type checkers to use inline type information

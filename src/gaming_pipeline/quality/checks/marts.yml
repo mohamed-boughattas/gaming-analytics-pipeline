@@ -1,0 +1,157 @@
+# Data quality checks for mart tables
+
+# Game Analytics Mart table checks
+checks for mart_game_analytics:
+  - row_count > 0
+  - missing_count(game_id) = 0
+  - missing_count(game_name) = 0
+  - duplicate_count(game_id) = 0
+  
+  # Business rule checks
+  - invalid_count(game_id) = 0:
+      valid format: number_whole
+  - invalid_count(release_year) = 0:
+      valid min: 1950
+      valid max: 2025
+  - invalid_count(average_rating) = 0:
+      valid min: 0
+      valid max: 10
+  - invalid_count(metacritic_score) = 0:
+      valid min: 0
+      valid max: 100
+  
+  # Statistical checks
+  - avg(average_rating) between 0 and 10
+  - min(average_rating) >= 0
+  - max(average_rating) <= 10
+  - avg(metacritic_score) between 0 and 100
+  - min(metacritic_score) >= 0
+  - max(metacritic_score) <= 100
+  
+  # Data consistency checks
+  - invalid_count(release_year) = 0:
+      valid format: number_whole
+  
+  # Referential integrity (if foreign keys exist)
+  - schema:
+      warn:
+        when required column missing: ["game_id", "game_name", "release_year"]
+
+# Genre Analytics Mart table checks
+checks for mart_genre_analytics:
+  - row_count > 0
+  - missing_count(genre_id) = 0
+  - missing_count(genre_name) = 0
+  - duplicate_count(genre_id) = 0
+  
+  # Business rule checks
+  - invalid_count(genre_id) = 0:
+      valid format: number_whole
+  - invalid_count(game_count) = 0:
+      valid min: 0
+      valid max: 100000
+  
+  # Statistical checks
+  - avg(game_count) >= 0
+  - min(game_count) >= 0
+  - max(game_count) >= 0
+  
+  # Data consistency checks
+  - invalid_count(genre_name) = 0:
+      valid regex: '^[A-Za-z ]+$'
+
+# Platform Analytics Mart table checks
+checks for mart_platform_analytics:
+  - row_count > 0
+  - missing_count(platform_id) = 0
+  - missing_count(platform_name) = 0
+  - duplicate_count(platform_id) = 0
+  
+  # Business rule checks
+  - invalid_count(platform_id) = 0:
+      valid format: number_whole
+  - invalid_count(game_count) = 0:
+      valid min: 0
+      valid max: 100000
+  
+  # Statistical checks
+  - avg(game_count) >= 0
+  - min(game_count) >= 0
+  - max(game_count) >= 0
+  
+  # Data consistency checks
+  - invalid_count(platform_name) = 0:
+      valid regex: '^[A-Za-z0-9 ]+$'
+
+# Game Platform Analytics Mart table checks
+checks for mart_game_platform_analytics:
+  - row_count > 0
+  - missing_count(game_id) = 0
+  - missing_count(platform_id) = 0
+  - duplicate_count(game_id, platform_id) = 0
+  
+  # Business rule checks
+  - invalid_count(game_id) = 0:
+      valid format: number_whole
+  - invalid_count(platform_id) = 0:
+      valid format: number_whole
+  
+  # Referential integrity checks (if foreign keys are enforced)
+  - schema:
+      warn:
+        when required column missing: ["game_id", "platform_id", "release_date"]
+
+# Yearly Game Trends Mart table checks
+checks for mart_yearly_game_trends:
+  - row_count > 0
+  - missing_count(year) = 0
+  - duplicate_count(year) = 0
+  
+  # Business rule checks
+  - invalid_count(year) = 0:
+      valid min: 1950
+      valid max: 2025
+  - invalid_count(game_count) = 0:
+      valid min: 0
+      valid max: 100000
+  - invalid_count(avg_rating) = 0:
+      valid min: 0
+      valid max: 10
+  
+  # Statistical checks
+  - avg(game_count) >= 0
+  - min(game_count) >= 0
+  - max(game_count) >= 0
+  - avg(avg_rating) between 0 and 10
+  - min(avg_rating) >= 0
+  - max(avg_rating) <= 10
+  
+  # Data consistency checks
+  - invalid_count(year) = 0:
+      valid format: number_whole
+
+# Genre Popularity Trends Mart table checks
+checks for mart_genre_popularity_trends:
+  - row_count > 0
+  - missing_count(genre_id) = 0
+  - missing_count(year) = 0
+  - duplicate_count(genre_id, year) = 0
+  
+  # Business rule checks
+  - invalid_count(genre_id) = 0:
+      valid format: number_whole
+  - invalid_count(year) = 0:
+      valid min: 1950
+      valid max: 2025
+  - invalid_count(game_count) = 0:
+      valid min: 0
+      valid max: 100000
+  
+  # Statistical checks
+  - avg(game_count) >= 0
+  - min(game_count) >= 0
+  - max(game_count) >= 0
+  
+  # Data consistency checks
+  - invalid_count(year) = 0:
+      valid format: number_whole

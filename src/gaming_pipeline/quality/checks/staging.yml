@@ -1,0 +1,99 @@
+# Data quality checks for staging tables
+
+# RAWG Games table checks
+checks for rawg_games:
+  # Basic table checks
+  - row_count > 0
+  - schema:
+      warn:
+        when required column missing: ["id", "name", "released"]
+      fail:
+        when forbidden column present: ["_dlt_load_id", "_dlt_id"]
+  
+  # Primary key checks
+  - schema:
+      fail:
+        when primary key missing: ["id"]
+  
+  # Null value checks
+  - missing_count(id) = 0
+  - missing_count(name) = 0
+  - missing_count(released) = 0
+  
+  # Uniqueness checks
+  - duplicate_count(id) = 0
+  
+  # Data type and format checks
+  - invalid_count(id) = 0:
+      valid format: number_whole
+  - invalid_count(released) = 0:
+      valid format: date
+  
+  # Range checks
+  - invalid_count(rating) = 0:
+      valid min: 0
+      valid max: 10
+  - invalid_count(metacritic) = 0:
+      valid min: 0
+      valid max: 100
+  
+  # Date range checks
+  - invalid_count(released) = 0:
+      valid min: 1950-01-01
+      valid max: 2025-12-31
+  
+  # Business rule checks
+  - invalid_count(name) = 0:
+      valid regex: '^[A-Za-z0-9 .,!?:;()\\-]+$'
+  
+  # Statistical checks
+  - avg(rating) between 0 and 10
+  - min(rating) >= 0
+  - max(rating) <= 10
+  
+  # Freshness checks (assuming data should be recent)
+  - freshness(released) < 365 days
+
+# RAWG Genres table checks
+checks for rawg_genres:
+  - row_count > 0
+  - missing_count(id) = 0
+  - missing_count(name) = 0
+  - duplicate_count(id) = 0
+  - schema:
+      fail:
+        when required column missing: ["id", "name", "slug"]
+  
+  # Business rule checks
+  - invalid_count(name) = 0:
+      valid regex: '^[A-Za-z ]+$'
+
+# RAWG Platforms table checks
+checks for rawg_platforms:
+  - row_count > 0
+  - missing_count(id) = 0
+  - missing_count(name) = 0
+  - duplicate_count(id) = 0
+  - schema:
+      fail:
+        when required column missing: ["id", "name", "slug"]
+  
+  # Business rule checks
+  - invalid_count(name) = 0:
+      valid regex: '^[A-Za-z0-9 ]+$'
+
+# Steam Apps table checks (when implemented)
+checks for steam_apps:
+  - row_count >= 0  # Allow empty for now
+  - missing_count(appid) = 0
+  - duplicate_count(appid) = 0
+  - schema:
+      fail:
+        when required column missing: ["appid", "name"]
+  
+  # Price checks
+  - invalid_count(appid) = 0:
+      valid format: number_whole
+  - invalid_count(price_overview.initial) = 0:
+      valid min: 0
+      valid max: 1000000  # Max price in cents (10000 USD)

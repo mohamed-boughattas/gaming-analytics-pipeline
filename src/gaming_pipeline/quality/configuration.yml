@@ -1,0 +1,33 @@
+# Soda Core configuration for gaming analytics pipeline
+
+data_source gaming_analytics:
+  type: duckdb
+  path: data/gaming_analytics.duckdb
+
+# Soda Cloud configuration (optional)
+# soda_cloud:
+#   host: cloud.soda.io
+#   api_key_id: ${SODA_API_KEY_ID}
+#   api_key_secret: ${SODA_API_KEY_SECRET}
+
+# Default scan configuration
+default:
+  # Data source to use
+  data_source: gaming_analytics
+  
+  # Output format
+  output_format: human
+  
+  # Logging level
+  log_level: INFO
+  
+  # Table configuration
+  table_name: "{{ table_name }}"
+  
+  # Variables for dynamic configuration
+  variables:
+    schema: "main"
+    table_prefix: "rawg_"
+    date_column: "released"
+    rating_column: "rating"
+    id_column: "id"
