@@ -1,0 +1,77 @@
+[project]
+name = "gaming_analytics_pipeline"
+version = "0.1.0"
+description = "Modern data engineering pipeline for gaming analytics using RAWG and Steam APIs"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "dlt[duckdb]>=1.0.0",
+    "prefect>=3.0.0",
+    "sqlmesh[duckdb]>=0.100.0",
+    "soda-core-duckdb>=3.0.0",
+    "requests>=2.31.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "duckdb>=0.9.0",
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "pendulum>=3.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gaming_pipeline"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.1.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pre-commit>=3.6.0",
+    "ty>=0.0.20",
+]
+
+dashboard = ["marimo>=0.11.0", "plotly>=5.24.0", "duckdb>=0.9.0"]
+
+ty = ["ty>=0.0.20"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"] # Allow assert statements in tests
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "--cov=src --cov-report=term-missing --cov-report=html"
+filterwarnings = ["ignore::UserWarning", "ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/conftest.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+]

@@ -1,0 +1,17 @@
+# SQLMesh Configuration for Gaming Analytics Pipeline
+
+gateway: local
+
+defaults:
+  dialect: duckdb
+  start: 2020-01-01
+  model_defaults:
+    materialized: table
+
+connections:
+  duckdb:
+    type: duck
+    database: data/gaming_analytics.duckdb
+
+model_defaults:
+  batch_size: 10000
