@@ -194,8 +194,8 @@ gaming-analytics-pipeline/
 │   └── transform/       # SQLMesh transformations
 ├── tests/               # Test files
 ├── docs/                # Documentation
-├── evidence/            # Dashboard
-└── docker/              # Docker configuration
+├── dashboard/           # Marimo dashboard
+└── plans/               # Architecture and implementation plans
 ```
 
 ## Types of Contributions
