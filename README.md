@@ -7,6 +7,12 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg)](https://github.com/astral-sh/ruff)
 [![Type checking: ty](https://img.shields.io/badge/type%20checking-ty-blue.svg)](https://github.com/astral-sh/ty)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![dlt](https://img.shields.io/badge/dlt-data%20loading-blue)](https://dlthub.com/)
+[![Prefect](https://img.shields.io/badge/Prefect-3.x-orange)](https://prefect.io/)
+[![Soda](https://img.shields.io/badge/Soda%20Quality-green)](https://soda.io/)
+[![SQLMesh](https://img.shields.io/badge/SQLMesh-transform-purple)](https://sqlmesh.com/)
+[![Marimo](https://img.shields.io/badge/Marimo-dashboard-teal)](https://marimo.io/)
+[![DuckDB](https://img.shields.io/badge/DuckDB-database-yellow)](https://duckdb.org/)
 
 A modern data engineering pipeline for collecting, processing, and analyzing gaming data from the RAWG API.
 
@@ -18,7 +24,7 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 - **Data Orchestration**: Manage workflows with Prefect 3.x
 - **Data Quality**: Validate data with Soda Core
 - **Data Transformation**: Transform data with SQLMesh
-- **Data Visualization**: Present insights with Evidence.dev
+- **Data Visualization**: Present insights with Marimo
 
 ## 🏗️ Architecture
 
@@ -41,8 +47,8 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
     ┌────────────┼────────────┐
     │            │            │
 ┌───▼────┐  ┌──▼────┐  ┌──▼────────┐
-│Prefect  │  │Soda    │  │Evidence   │
-│3.x     │  │Core    │  │.dev      │
+│Prefect  │  │Soda    │  │Marimo     │
+│3.x     │  │Core    │  │Dashboard │
 └────────┘  └─────────┘  └───────────┘
 ```
 
@@ -92,7 +98,7 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 
 2. **Access services**:
    - Prefect UI: <http://localhost:4200>
-   - Evidence Dashboard: <http://localhost:3000>
+   - Marimo Dashboard: <http://localhost:8000>
 
 ## 📁 Project Structure
 
@@ -101,16 +107,31 @@ gaming-analytics-pipeline/
 ├── src/gaming_pipeline/
 │   ├── config/           # Configuration management
 │   ├── extract/          # Data extraction (RAWG)
-│   ├── load/            # Data loading with dlt
+│   ├── load/             # Data loading with dlt
 │   ├── orchestrate/      # Prefect workflows
 │   ├── quality/          # Soda Core checks
-│   └── transform/       # SQLMesh transformations
-├── tests/               # Pytest tests
-├── data/                # DuckDB database files
-├── evidence/            # Evidence.dev dashboard
-├── dashboard/           # Marimo dashboard
-├── plans/               # Architecture and implementation plans
-└── .github/workflows/   # CI/CD pipelines
+│   └── transform/        # SQLMesh transformations
+├── tests/                # Pytest tests
+├── data/                 # DuckDB database files
+├── dashboard/            # Marimo dashboard
+├── docs/                 # Documentation (ADR, data lineage, etc.)
+├── logs/                 # Application logs
+├── htmlcov/              # Test coverage reports
+├── .github/workflows/    # CI/CD pipelines
+├── .env.example          # Environment configuration template
+├── .gitignore            # Git ignore patterns
+├── .pre-commit-config.yaml # Pre-commit hooks
+├── LICENSE               # MIT License
+├── README.md             # Project documentation
+├── CONTRIBUTING.md       # Contribution guidelines
+├── main.py               # Main entry point
+├── compose.yaml          # Docker Compose configuration
+├── Dockerfile            # Pipeline container
+├── Dockerfile.dashboard  # Dashboard container
+├── pyproject.toml        # Project dependencies
+├── uv.lock               # Dependency lock file
+├── Makefile              # Development commands
+└── sqlmesh.yaml          # SQLMesh configuration
 ```
 
 ## 🔧 Configuration
@@ -175,7 +196,7 @@ The pipeline runs in the following order:
 2. **Load**: Store data in DuckDB using dlt
 3. **Transform**: Apply SQLMesh transformations
 4. **Quality**: Validate data with Soda Core
-5. **Visualize**: Update Evidence.dev dashboard
+5. **Visualize**: Update Marimo dashboard
 
 ## 📈 Monitoring
 
@@ -195,15 +216,6 @@ View Soda Core results:
 
 ```bash
 python -m src.gaming_pipeline.quality.checks
-```
-
-### Evidence Dashboard
-
-Build the dashboard:
-
-```bash
-cd evidence
-npx evidence build
 ```
 
 ### Marimo Dashboard
@@ -282,7 +294,7 @@ This project is licensed under the MIT License.
 - [Prefect](https://www.prefect.io/) for orchestration
 - [Soda Core](https://www.soda.io/) for data quality
 - [SQLMesh](https://sqlmesh.com/) for transformations
-- [Evidence.dev](https://evidence.dev/) for visualization
+- [Marimo](https://marimo.io/) for visualization
 
 ## 📞 Support
 
