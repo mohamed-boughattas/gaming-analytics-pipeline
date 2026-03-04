@@ -112,6 +112,7 @@ venv.bak/
 *.parquet
 *.db
 *.sqlite
+*.duckdb
 
 # IDE files
 .vscode/
