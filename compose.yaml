@@ -1,0 +1,51 @@
+services:
+  gaming-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gaming_analytics_pipeline
+    volumes:
+      - ./data:/app/data
+      - ./evidence:/app/evidence
+    environment:
+      - DATABASE_PATH=/app/data/gaming_analytics.duckdb
+      - MOTHERDUCK_TOKEN=${MOTHERDUCK_TOKEN:-}
+      - PREFECT_API_URL=${PREFECT_API_URL:-http://localhost:4200/api}
+    ports:
+      - "4200:4200"
+    restart: unless-stopped
+    command: ["prefect", "server", "start", "--host", "0.0.0.0"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://0.0.0.0:4200/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  marimo-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: gaming_analytics_dashboard
+    volumes:
+      - ./data:/app/data
+      - ./dashboard:/app/dashboard
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+networks:
+  default:
+    name: gaming_analytics_network
+
+volumes:
+  evidence_cache:
+    driver: local
