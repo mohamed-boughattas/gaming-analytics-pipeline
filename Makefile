@@ -1,4 +1,4 @@
-.PHONY: help install test lint typecheck format clean docker-build docker-up docker-down db-status pre-commit pre-commit-install demo all check-env sqlmesh-plan sqlmesh-apply sqlmesh-test dashboard docker-logs docker-restart docker-ps format-check seed-data docker-build-marimo docker-up-marimo
+.PHONY: help install test lint typecheck format clean docker-build docker-up docker-down db-status pre-commit pre-commit-install demo all check-env sqlmesh-plan sqlmesh-apply sqlmesh-test dashboard docker-logs docker-restart docker-ps format-check seed-data docker-build-marimo docker-up-marimo security bandit pip-audit
 
 # Default target
 help:
@@ -19,6 +19,11 @@ help:
 	@echo "  make pre-commit       - Run pre-commit hooks"
 	@echo "  make seed-data        - Seed database with sample data"
 	@echo "  make dashboard        - Start Marimo dashboard locally"
+	@echo ""
+	@echo "Security:"
+	@echo "  make security         - Run all security checks (bandit + pip-audit)"
+	@echo "  make bandit           - Run bandit security linter"
+	@echo "  make pip-audit        - Run pip-audit dependency vulnerability scanner"
 	@echo ""
 	@echo "Pipeline:"
 	@echo "  make run              - Run daily pipeline (default: 50 pages, 10 max)"
@@ -69,6 +74,19 @@ format:
 
 pre-commit:
 	uv run pre-commit run --all-files
+
+# Security: Scan Python dependencies for vulnerabilities
+pip-audit:
+	@echo "🔒 Running pip-audit (Python dependency scanner)..."
+	@uv run pip-audit --skip-editable || true
+
+# Security: Scan code for security issues
+bandit:
+	@echo "🔍 Running bandit (Code-level security scanner)..."
+	@uv run bandit -r . -ll -c .bandit || true
+
+# Security: Run all security scans
+security: pip-audit bandit
 
 # Pipeline
 run:

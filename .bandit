@@ -1,0 +1,21 @@
+# Bandit configuration for Gaming Analytics Pipeline
+exclude_dirs:
+  - /.venv/
+  - /venv/
+  - /env/
+  - /.git/
+  - /.pytest_cache/
+  - /__pycache__/
+  - /.tox/
+  - /.eggs/
+  - /dist/
+  - /build/
+  - /.ruff_cache/
+  - /scripts/
+  - /dashboard/
+  - /htmlcov/
+  - /logs/
+  - /data/
+  - /docs/
+
+skips: ['B101']

@@ -19,6 +19,9 @@ dependencies = [
     "pendulum>=3.0.0",
 ]
 
+[tool.uv]
+resolution = "highest"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/gaming_pipeline"]
 
@@ -34,6 +37,8 @@ dev = [
     "pytest-cov>=4.0.0",
     "pre-commit>=3.6.0",
     "ty>=0.0.20",
+    "bandit>=1.7.0",
+    "pip-audit>=2.7.0",
 ]
 
 dashboard = ["marimo>=0.11.0", "plotly>=5.24.0", "duckdb>=1.1.0"]
