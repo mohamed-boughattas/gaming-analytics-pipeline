@@ -18,9 +18,9 @@ This document describes the data flow and transformations in the Gaming Analytic
 ┌─────────────────────────────────────────┐
 │        Extract Layer                  │
 │  ┌────────────────────────────────┐   │
-│  │ - extract_genres()          │   │
-│  │ - extract_platforms()        │   │
-│  │ - extract_games()           │   │
+│  │ - extract_rawg_genres()       │   │
+│  │ - extract_rawg_platforms()    │   │
+│  │ - extract_rawg_games()        │   │
 │  └────────────────────────────────┘   │
 └────────┬────────────────────────────────┘
          │
@@ -87,7 +87,7 @@ This document describes the data flow and transformations in the Gaming Analytic
 
 - `extract_rawg_genres()` - Fetches genre metadata
 - `extract_rawg_platforms()` - Fetches platform metadata
-- `extract_games()` - Fetches games with configurable pagination
+- `extract_rawg_games()` - Fetches games with configurable pagination
 
 **Rate Limiting**: 5 requests per second (configurable)
 
@@ -161,7 +161,7 @@ This document describes the data flow and transformations in the Gaming Analytic
 
 **Engagement Score Formula**:
 
-```
+```text
 engagement_score = (rating * 0.4) + (metacritic/10 * 0.3) + (ratings_count/100 * 0.3)
 ```
 

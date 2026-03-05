@@ -201,7 +201,7 @@ gaming-analytics-pipeline/
 ├── tests/               # Test files
 ├── docs/                # Documentation
 ├── dashboard/           # Marimo dashboard
-└── plans/               # Architecture and implementation plans
+└── scripts/             # Utility scripts
 ```
 
 ## Types of Contributions

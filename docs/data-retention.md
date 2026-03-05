@@ -15,14 +15,11 @@ Data retention is managed to balance:
 
 ### Staging Layer (Raw Data)
 
-| Table             | Retention Period | Archive Strategy   | Rationale                                                     |
-| ----------------- | ---------------- | ------------------ | ------------------------------------------------------------- |
-| `rawg_games`      | 2 years          | Archive to parquet | Games data grows large; keep recent games for active analysis |
-| `rawg_genres`     | Indefinite       | N/A                | Small reference data; rarely changes                          |
-| `rawg_platforms`  | Indefinite       | N/A                | Small reference data; rarely changes                          |
-| `rawg_stores`     | Indefinite       | N/A                | Small reference data; rarely changes                          |
-| `rawg_developers` | Indefinite       | N/A                | Small reference data; rarely changes                          |
-| `rawg_publishers` | Indefinite       | N/A                | Small reference data; rarely changes                          |
+| Table            | Retention Period | Archive Strategy   | Rationale                                                     |
+| ---------------- | ---------------- | ------------------ | ------------------------------------------------------------- |
+| `rawg_games`     | 2 years          | Archive to parquet | Games data grows large; keep recent games for active analysis |
+| `rawg_genres`    | Indefinite       | N/A                | Small reference data; rarely changes                          |
+| `rawg_platforms` | Indefinite       | N/A                | Small reference data; rarely changes                          |
 
 ### Mart Layer (Transformed Data)
 

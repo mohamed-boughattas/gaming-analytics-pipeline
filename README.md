@@ -157,12 +157,13 @@ Get your API keys:
 
 ### Staging Layer
 
+- `stg_games`: Staging games data with type casting and null handling
+- `stg_genres`: Staging genres data with type casting and null handling
+- `stg_platforms`: Staging platforms data with type casting and null handling
+
 - `rawg_games`: Raw game data from RAWG
 - `rawg_genres`: Genre information
 - `rawg_platforms`: Platform information
-- `rawg_stores`: Store information
-- `rawg_developers`: Developer information
-- `rawg_publishers`: Publisher information
 
 ### Mart Layer
 
