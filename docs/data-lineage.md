@@ -1,234 +1,292 @@
 # Data Lineage Documentation
 
-This document describes the data flow and transformations in the Gaming Analytics Pipeline.
-
 ## Overview
 
-The pipeline follows a modern ELT (Extract, Load, Transform) pattern with data quality checks and visualization.
+This document describes the data flow and transformations in the Gaming Analytics Pipeline, from API ingestion through to final analytics tables.
 
-## Data Flow Diagram
-
-```mermaid
-graph LR
-    subgraph "Data Sources"
-        A[RAWG API]
-    end
-    
-    subgraph "Ingestion Layer"
-        B[dlt Extractors]
-        C[Async HTTP Client]
-    end
-    
-    subgraph "Staging Layer (DuckDB)"
-        D[rawg_games]
-        E[rawg_genres]
-        F[rawg_platforms]
-        G[rawg_stores]
-        H[rawg_developers]
-        I[rawg_publishers]
-    end
-    
-    subgraph "Transformation Layer (SQLMesh)"
-        J[marts_games]
-        K[marts_genres]
-        L[marts_platforms]
-    end
-    
-    subgraph "Quality Layer (Soda Core)"
-        M[Validation Checks]
-    end
-    
-    subgraph "Visualization Layer"
-        N[Marimo Dashboard]
-        O[Charts & Metrics]
-    end
-    
-    subgraph "Orchestration"
-        P[Prefect Flows]
-    end
-    
-    A --> B
-    B --> C
-    C --> D
-    C --> E
-    C --> F
-    C --> G
-    C --> H
-    C --> I
-    P --> B
-    D --> J
-    E --> J
-    F --> J
-    J --> M
-    K --> M
-    L --> M
-    J --> N
-    K --> O
-    L --> O
-```
-
-## Detailed Data Flow
-
-### 1. Extraction Phase
-
-**Source**: RAWG API
-
-- Endpoints: Games, Genres, Platforms, Stores, Developers, Publishers
-- Authentication: API Key
-- Rate Limiting: Configurable page size and delays
-
-**Tools**:
-
-- `dlt` for data extraction
-- Async HTTP client for parallel requests
-- Pydantic models for schema validation
-
-### 2. Loading Phase
-
-**Destination**: DuckDB (`data/gaming_analytics.duckdb`)
-
-- Schema: `gaming_analytics`
-- Write Strategies:
-  - `rawg_genres`, `rawg_platforms`: Replace (full refresh)
-  - `rawg_games`: Append (incremental)
-
-**Tables Created**:
-
-- `rawg_games`: Raw game data with all API fields
-- `rawg_genres`: Genre reference data
-- `rawg_platforms`: Platform reference data
-- `rawg_stores`: Store reference data
-- `rawg_developers`: Developer reference data
-- `rawg_publishers`: Publisher reference data
-
-### 3. Transformation Phase
-
-**Tool**: SQLMesh
-**Materialization**: Tables (configurable to views)
-
-#### Mart: Games (`marts_games`)
-
-- **Sources**: `rawg_games`, `rawg_genres`, `rawg_platforms`
-- **Transformations**:
-  - Denormalize genre information
-  - Aggregate platform data
-  - Calculate derived metrics (rating tiers, release categories)
-  - Filter and clean data
-
-#### Mart: Genres (`marts_genres`)
-
-- **Sources**: `rawg_games`, `rawg_genres`
-- **Transformations**:
-  - Aggregate game counts per genre
-  - Calculate average ratings
-  - Trend analysis over time
-
-#### Mart: Platforms (`marts_platforms`)
-
-- **Sources**: `rawg_games`, `rawg_platforms`
-- **Transformations**:
-  - Aggregate game counts per platform
-  - Platform popularity metrics
-  - Cross-platform game analysis
-
-### 4. Quality Phase
-
-**Tool**: Soda Core
-**Checks**:
-
-- Row count validation
-- Null value checks
-- Value range validation
-- Freshness checks
-- Schema validation
-
-**Configuration Files**:
-
-- `src/gaming_pipeline/quality/checks/staging.yml`: Staging table checks
-- `src/gaming_pipeline/quality/checks/marts.yml`: Mart table checks
-
-### 5. Visualization Phase
-
-**Tool**: Marimo
-**Pages**:
-
-- `index.md`: Overview dashboard with quick stats
-- `games.md`: Detailed game analytics
-- `genres.md`: Genre analysis and trends
-- `platforms.md`: Platform performance metrics
-- `trends.md`: Historical trend analysis
-
-## Data Dependencies
+## Architecture Diagram
 
 ```text
-rawg_games
-├── → marts_games (primary)
-├── → marts_genres (genre aggregation)
-└── → marts_platforms (platform aggregation)
-
-rawg_genres
-├── → marts_games (genre enrichment)
-└── → marts_genres (primary)
-
-rawg_platforms
-├── → marts_games (platform enrichment)
-└── → marts_platforms (primary)
+┌─────────────────┐
+│   RAWG API      │
+│  (Source)       │
+└────────┬────────┘
+         │
+         │ HTTP/JSON
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│        Extract Layer                  │
+│  ┌────────────────────────────────┐   │
+│  │ - extract_genres()          │   │
+│  │ - extract_platforms()        │   │
+│  │ - extract_games()           │   │
+│  └────────────────────────────────┘   │
+└────────┬────────────────────────────────┘
+         │
+         │ JSON Data
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│        Load Layer (dlt)              │
+│  ┌────────────────────────────────┐   │
+│  │ rawg_genres                │   │
+│  │ rawg_platforms             │   │
+│  │ rawg_games                 │   │
+│  └────────────────────────────────┘   │
+└────────┬────────────────────────────────┘
+         │
+         │ DuckDB (gaming_analytics schema)
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│     Transform Layer (SQLMesh)         │
+│  ┌────────────────────────────────┐   │
+│  │ marts_games                 │   │
+│  │   - Rating categories       │   │
+│  │   - Engagement score        │   │
+│  │   - JSON array expansion    │   │
+│  ├────────────────────────────────┤   │
+│  │ marts_genres               │   │
+│  │   - Aggregated metrics      │   │
+│  │   - Rating breakdowns       │   │
+│  │   - Percentage columns      │   │
+│  ├────────────────────────────────┤   │
+│  │ marts_platforms             │   │
+│  │   - Aggregated metrics      │   │
+│  │   - Year ranges            │   │
+│  │   - Rating breakdowns       │   │
+│  └────────────────────────────────┘   │
+└────────┬────────────────────────────────┘
+         │
+         │ Analytics Tables
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│      Visualization Layer               │
+│  ┌────────────────────────────────┐   │
+│  │ Marimo Dashboard            │   │
+│  └────────────────────────────────┘   │
+│  ┌────────────────────────────────┐   │
+└─────────────────────────────────────────┘
 ```
+
+## Data Flow Details
+
+### 1. Extraction
+
+**Source**: RAWG API (<https://api.rawg.io/api>)
+
+**Endpoints Used**:
+
+- `/genres` - List all game genres
+- `/platforms` - List all gaming platforms
+- `/games` - List games with pagination
+
+**Extractors**:
+
+- `extract_rawg_genres()` - Fetches genre metadata
+- `extract_rawg_platforms()` - Fetches platform metadata
+- `extract_games()` - Fetches games with configurable pagination
+
+**Rate Limiting**: 5 requests per second (configurable)
+
+### 2. Loading (dlt)
+
+**Destination**: DuckDB
+
+**Schema**: `gaming_analytics`
+
+**Raw Tables**:
+
+#### `rawg_genres`
+
+| Column           | Type    | Description          |
+| ---------------- | ------- | -------------------- |
+| id               | INTEGER | Primary key          |
+| name             | VARCHAR | Genre name           |
+| slug             | VARCHAR | URL-friendly name    |
+| image_background | VARCHAR | Background image URL |
+| games_count      | INTEGER | Total games in genre |
+
+#### `rawg_platforms`
+
+| Column           | Type    | Description              |
+| ---------------- | ------- | ------------------------ |
+| id               | INTEGER | Primary key              |
+| name             | VARCHAR | Platform name            |
+| slug             | VARCHAR | URL-friendly name        |
+| image            | VARCHAR | Platform image URL       |
+| platform_details | JSON    | Year ranges, game counts |
+
+#### `rawg_games`
+
+| Column           | Type      | Description               |
+| ---------------- | --------- | ------------------------- |
+| id               | INTEGER   | Primary key               |
+| name             | VARCHAR   | Game title                |
+| slug             | VARCHAR   | URL-friendly name         |
+| released         | DATE      | Release date              |
+| updated          | TIMESTAMP | Last updated              |
+| rating           | FLOAT     | User rating (0-5)         |
+| metacritic       | INTEGER   | Metacritic score (0-100)  |
+| ratings_count    | INTEGER   | Number of user ratings    |
+| genres           | JSON      | Array of genre objects    |
+| platforms        | JSON      | Array of platform objects |
+| stores           | JSON      | Array of store objects    |
+| playtime         | INTEGER   | Average playtime (hours)  |
+| background_image | VARCHAR   | Game image URL            |
+| ...              | ...       | Additional metadata       |
+
+**Load Strategy**:
+
+- Genres/Platforms: `REPLACE` (full refresh)
+- Games: `APPEND` (incremental)
+
+### 3. Transformation (SQLMesh)
+
+#### `marts_games`
+
+**Purpose**: Enrich games with calculated metrics and expand JSON arrays
+
+**Transformations**:
+
+1. Extract genre names from JSON array → `genre_names` (LIST)
+2. Extract platform names from JSON array → `platform_names` (LIST)
+3. Extract store names from JSON array → `store_names` (LIST)
+4. Calculate `rating_category` (Excellent/Good/Average/Below Average/Poor)
+5. Extract `release_year` and `release_month` from date
+6. Calculate `engagement_score` (weighted formula)
+7. Count array lengths for metrics
+
+**Engagement Score Formula**:
+
+```
+engagement_score = (rating * 0.4) + (metacritic/10 * 0.3) + (ratings_count/100 * 0.3)
+```
+
+**Model Type**: INCREMENTAL (by `id`)
+
+#### `marts_genres`
+
+**Purpose**: Aggregate metrics per genre
+
+**Transformations**:
+
+1. Explode genre-game relationships from games table
+2. Aggregate:
+   - `total_games` - Count distinct games
+   - `avg_rating`, `avg_metacritic` - Average scores
+   - `max_rating`, `min_rating` - Score ranges
+   - `total_ratings`, `avg_ratings_per_game` - Rating volume
+   - `avg_playtime` - Average gameplay hours
+3. Categorize games by quality (excellent/good/average/below_average)
+4. Calculate percentages for each quality tier
+
+**Model Type**: FULL (refreshes all data)
+
+#### `marts_platforms`
+
+**Purpose**: Aggregate metrics per platform
+
+**Transformations**:
+
+1. Explode platform-game relationships from games table
+2. Extract year ranges from JSON metadata
+3. Aggregate same metrics as genres
+4. Categorize games by quality
+5. Calculate percentages for each quality tier
+
+**Model Type**: FULL (refreshes all data)
+
+### 4. Visualization
+
+**Marimo Dashboard**:
+
+- Interactive Python notebook
+- Plotly visualizations
+- Real-time data queries
+- Local development
+
+## Data Quality Checks
+
+### Soda Core Checks
+
+**Staging Layer** (`src/gaming_pipeline/quality/checks/staging.yml`):
+
+- Row count checks (expect > 0)
+- Schema validation
+- Null checks on key columns
+
+**Marts Layer** (`src/gaming_pipeline/quality/checks/marts.yml`):
+
+- Aggregation accuracy
+- Rating range validation (0-5, 0-100)
+- Reference integrity
+- Duplicate detection
 
 ## Orchestration
 
-**Tool**: Prefect 3.x
+**Prefect 3.x**:
 
-### Flows
+- Flow: `gaming-analytics-daily` - Daily incremental load
+- Flow: `gaming-analytics-full-load` - Historical load
+- Flow: `gaming-analytics-extract-only` - Extraction only
+- Flow: `gaming-analytics-load-only` - Loading only
 
-1. **Daily Pipeline** (`daily_pipeline_flow`)
-   - Extract recent data (last N days)
-   - Load to staging
-   - Run transformations
-   - Execute quality checks
-   - Update dashboard
+**Schedule**:
 
-2. **Full Load** (`full_load_pipeline_flow`)
-   - Extract all historical data
-   - Full load to staging
-   - Run all transformations
-   - Execute quality checks
-   - Update dashboard
-
-### Tasks
-
-- `extract_rawg_data`: Fetch data from API
-- `load_to_duckdb`: Store data in database
-- `run_transformations`: Execute SQLMesh models
-- `validate_data`: Run Soda checks
-- `update_dashboard`: Refresh Marimo dashboard
-
-## Data Freshness
-
-- **Staging Tables**: Updated on daily/weekly basis
-- **Mart Tables**: Recomputed after staging updates
-- **Dashboard**: Updated after successful transformation
+- Daily: 6 AM UTC (incremental)
+- Weekly: Sunday 2 AM UTC (full load)
 
 ## Data Retention
 
-See `docs/data-retention.md` for retention policies.
+See [data-retention.md](./data-retention.md) for detailed retention policies.
+
+## Key Metrics
+
+| Metric             | Source                   | Update Frequency     |
+| ------------------ | ------------------------ | -------------------- |
+| Total Games        | rawg_games               | Daily (append)       |
+| Avg Rating         | marts_games              | Daily (incremental)  |
+| Genre Distribution | marts_genres             | Daily (full refresh) |
+| Platform Stats     | marts_platforms          | Daily (full refresh) |
+| Engagement Score   | marts_games (calculated) | Daily (incremental)  |
+
+## Dependencies
+
+**External**:
+
+- RAWG API key (required)
+- Internet connection (for extraction)
+
+**Internal**:
+
+- DuckDB file must exist
+- SQLMesh models must be applied
+- Soda checks must pass
 
 ## Troubleshooting
 
-### Data Not Appearing in Dashboard
+### Pipeline Failures
 
-1. Check if staging tables have data: `python main.py status`
-2. Verify transformations ran successfully
-3. Check Marimo dashboard build logs
+1. **API Rate Limiting**: Increase delay between requests
+2. **Missing Tables**: Run SQLMesh plan/apply first
+3. **Data Quality Issues**: Review Soda check results
+4. **Dashboard Errors**: Ensure marts tables are populated
 
-### Quality Check Failures
+### Common Issues
 
-1. Review Soda check results in logs
-2. Investigate data quality issues
-3. Update checks if thresholds are too strict
+- **Empty results**: Check if API key is valid
+- **Schema errors**: Verify SQLMesh model syntax
+- **Performance**: Reduce page size or max pages
+- **Memory issues**: DuckDB file too large - consider partitioning
 
-### Pipeline Stuck
+## Future Enhancements
 
-1. Check Prefect UI for task status
-2. Review logs in `logs/pipeline.log`
-3. Verify API rate limits not exceeded
+- Add incremental loading for genres/platforms
+- Implement data versioning with SQLMesh
+- Add more quality checks
+- Real-time streaming support
+- Multi-source ingestion (additional APIs)
+- Advanced ML models for predictions
