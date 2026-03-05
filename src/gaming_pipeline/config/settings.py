@@ -7,7 +7,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DatabaseConfig(BaseSettings):
     """Database configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="DB_")
+    model_config = SettingsConfigDict(
+        env_prefix="DB_",
+        extra="ignore",
+    )
 
     type: str = "duckdb"
     path: str = "data/gaming_analytics.duckdb"
@@ -24,7 +27,10 @@ class DatabaseConfig(BaseSettings):
 class APIConfig(BaseSettings):
     """API configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="RAWG_")
+    model_config = SettingsConfigDict(
+        env_prefix="RAWG_",
+        extra="ignore",
+    )
 
     api_key: str | None = Field(default=None, alias="API_KEY")
     base_url: str = "https://api.rawg.io/api"
@@ -46,7 +52,10 @@ class APIConfig(BaseSettings):
 class PipelineConfig(BaseSettings):
     """Pipeline configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="PIPELINE_")
+    model_config = SettingsConfigDict(
+        env_prefix="PIPELINE_",
+        extra="ignore",
+    )
 
     batch_size: int = 100
     max_retries: int = 3
@@ -58,7 +67,10 @@ class PipelineConfig(BaseSettings):
 class SodaConfig(BaseSettings):
     """Soda Core configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="SODA_")
+    model_config = SettingsConfigDict(
+        env_prefix="SODA_",
+        extra="ignore",
+    )
 
     checks_path: str = "src/gaming_pipeline/quality/checks"
     configuration_file: str = "src/gaming_pipeline/quality/configuration.yml"
@@ -71,6 +83,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # Environment
@@ -81,6 +94,11 @@ class Settings(BaseSettings):
     api: APIConfig = Field(default_factory=APIConfig)
     pipeline: PipelineConfig = Field(default_factory=PipelineConfig)
     soda: SodaConfig = Field(default_factory=SodaConfig)
+
+    # Additional environment variables (for compatibility)
+    database_path: str | None = Field(default=None, alias="DATABASE_PATH")
+    motherduck_token: str | None = Field(default=None, alias="MOTHERDUCK_TOKEN")
+    prefect_api_url: str | None = Field(default=None, alias="PREFECT_API_URL")
 
     @property
     def is_production(self) -> bool:
