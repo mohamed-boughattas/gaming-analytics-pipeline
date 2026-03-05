@@ -11,8 +11,8 @@ WORKDIR /app
 # Install uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
+# Copy dependency files AND README (required for build metadata)
+COPY pyproject.toml uv.lock README.md ./
 
 # Install dependencies using uv sync (ensures consistent versions)
 RUN uv sync --frozen --no-dev
@@ -20,7 +20,6 @@ RUN uv sync --frozen --no-dev
 # Copy application code
 COPY src/ /app/src/
 COPY main.py /app/
-COPY README.md ./
 COPY .env.example ./
 
 # Create data directory
