@@ -106,7 +106,8 @@ class GamingPipeline:
     def get_load_info(self) -> Any:
         """Get information about last load."""
         try:
-            return self.pipeline.last_trace
+            trace = self.pipeline.last_trace
+            return trace if trace is not None else {}
         except Exception as e:
             logger.error(f"Failed to get load info: {e}")
             return {}
