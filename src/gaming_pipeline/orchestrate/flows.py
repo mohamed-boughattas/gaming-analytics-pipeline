@@ -5,10 +5,9 @@ from typing import TYPE_CHECKING, Any
 
 from pendulum import now as pendulum_now
 from prefect import flow, get_run_logger
-from prefect.server.schemas.schedules import CronSchedule
 
 if TYPE_CHECKING:
-    from prefect.deployments import Deployment
+    pass
 
 from gaming_pipeline.orchestrate.tasks import (
     extract_rawg_genres_task,
@@ -148,71 +147,11 @@ async def load_only_flow(
     return result
 
 
-# Deployment configurations
-def create_daily_deployment() -> Any:
-    """Create daily deployment for pipeline."""
-    return Deployment.build_from_flow(  # type: ignore[attr-defined]
-        flow=daily_pipeline_flow,
-        name="daily-pipeline-deployment",
-        schedule=CronSchedule(cron="0 6 * * *"),  # Daily at 6 AM
-        parameters={"page_size": 50, "max_pages": 10, "updated_after_days": 1},
-        work_pool_name="default-agent-pool",
-        description="Daily gaming analytics pipeline deployment",
-    )
-
-
-def create_full_load_deployment() -> Any:
-    """Create full load deployment for pipeline."""
-    return Deployment.build_from_flow(  # type: ignore[attr-defined]
-        flow=full_load_pipeline_flow,
-        name="full-load-pipeline-deployment",
-        schedule=CronSchedule(cron="0 2 * * 0"),  # Weekly on Sunday at 2 AM
-        parameters={"page_size": 100, "max_pages": 50},
-        work_pool_name="default-agent-pool",
-        description="Weekly full load gaming analytics pipeline deployment",
-    )
-
-
-def create_extract_only_deployment() -> Any:
-    """Create extract-only deployment for pipeline."""
-    return Deployment.build_from_flow(  # type: ignore[attr-defined]
-        flow=extract_only_flow,
-        name="extract-only-pipeline-deployment",
-        schedule=CronSchedule(cron="0 4 * * *"),  # Daily at 4 AM
-        work_pool_name="default-agent-pool",
-        description="Daily extract-only gaming analytics pipeline deployment",
-    )
-
-
-def create_load_only_deployment() -> Any:
-    """Create load-only deployment for pipeline."""
-    return Deployment.build_from_flow(  # type: ignore[attr-defined]
-        flow=load_only_flow,
-        name="load-only-pipeline-deployment",
-        schedule=CronSchedule(cron="0 8 * * *"),  # Daily at 8 AM
-        parameters={"page_size": 50, "max_pages": 10, "updated_after_days": 7},
-        work_pool_name="default-agent-pool",
-        description="Daily load-only gaming analytics pipeline deployment",
-    )
-
-
-# Convenience functions for deployment creation
-def create_all_deployments() -> list[Any]:
-    """Create all pipeline deployments."""
-    return [
-        create_daily_deployment(),
-        create_full_load_deployment(),
-        create_extract_only_deployment(),
-        create_load_only_deployment(),
-    ]
-
-
-def deploy_all() -> None:
-    """Deploy all pipeline deployments."""
-    deployments = create_all_deployments()
-    for deployment in deployments:
-        deployment.apply()
-        logger.info(f"Deployed {deployment.name}")
+# Note: Prefect 3.x deployments are created using the CLI:
+# prefect deploy <flow_name> --name <deployment_name> --cron <schedule>
+#
+# For local development, use the run_*_pipeline() functions below.
+# For production deployment, see Prefect documentation for deployment commands.
 
 
 # Example usage functions

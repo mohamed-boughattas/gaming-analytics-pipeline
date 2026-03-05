@@ -7,7 +7,7 @@ from pendulum import now as pendulum_now
 from prefect import task
 from prefect.artifacts import create_markdown_artifact
 
-from gaming_pipeline.config import config
+from gaming_pipeline.config import settings
 from gaming_pipeline.extract import extract_rawg_genres, extract_rawg_platforms
 from gaming_pipeline.load.pipeline import GamingPipeline
 
@@ -127,7 +127,7 @@ async def run_full_pipeline_task(
 ## Execution Details
 - **Pipeline Name**: gaming-analytics
 - **Execution Time**: {result.get("timestamp", pendulum_now().isoformat())}
-- **Environment**: {"Production" if config.is_production else "Development"}
+- **Environment**: {"Production" if settings.is_production else "Development"}
 
 ## RAWG Data Load Results
 - **Total Games**: {rawg_result.get("total_games", 0)}
@@ -190,20 +190,3 @@ def refresh_schema_task() -> None:
     pipeline.refresh_schema()
 
     logger.info("Pipeline schema refreshed successfully")
-
-
-@task(
-    name="Load Steam Data",
-    description="Load Steam data into DuckDB",
-    retries=1,
-    retry_delay_seconds=60,
-)
-async def load_steam_data_task(app_ids: list[int] | None = None) -> dict[str, Any]:
-    """Load Steam data into pipeline."""
-    logger.info("Starting Steam data load")
-
-    pipeline = GamingPipeline()
-    result = await pipeline.load_steam_data(app_ids=app_ids)
-
-    logger.info(f"Successfully loaded Steam data: {result}")
-    return result
