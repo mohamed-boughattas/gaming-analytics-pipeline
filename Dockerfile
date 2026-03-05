@@ -11,15 +11,17 @@ WORKDIR /app
 # Install uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy application code first for editable install
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies using uv sync (ensures consistent versions)
+RUN uv sync --frozen --no-dev
+
+# Copy application code
 COPY src/ /app/src/
 COPY main.py /app/
-COPY pyproject.toml uv.lock README.md ./
+COPY README.md ./
 COPY .env.example ./
-
-# Install dependencies (with editable install)
-RUN uv pip install --system --upgrade pip setuptools wheel
-RUN uv pip install --system -e /app
 
 # Create data directory
 RUN mkdir -p /app/data
@@ -33,5 +35,5 @@ EXPOSE 4200
 # Set environment variables
 ENV PYTHONPATH=/app/src
 
-# Default command runs the CLI
-CMD ["python", "/app/main.py"]
+# Default command runs the CLI (using uv to access venv)
+CMD ["uv", "run", "python", "/app/main.py"]

@@ -127,11 +127,11 @@ jobs:
       - name: Run Bandit security linter
         continue-on-error: true
         run: |
-          uv run bandit -r . -ll -c .bandit -f json -o bandit-report.json
-          uv run bandit -r . -ll -c .bandit
+          uv run bandit -r . -ll -c .bandit -f json -o bandit-report.json || true
+          uv run bandit -r . -ll -c .bandit || true
 
       - name: Upload Bandit results
-        if: always()
+        if: always() && hashFiles('bandit-report.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: bandit-report
