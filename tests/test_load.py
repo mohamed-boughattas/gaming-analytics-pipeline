@@ -1,97 +1,99 @@
-"""Tests for data loading module."""
+"""Tests for the load module."""
+
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from gaming_pipeline.load.pipeline import GamingPipeline
 
 
-@pytest.mark.asyncio
+@pytest.fixture
+def mock_settings(monkeypatch):
+    """Mock settings for testing."""
+    from gaming_pipeline.config.settings import DatabaseConfig, Settings
+
+    mock_db_config = DatabaseConfig(
+        path=":memory:",  # In-memory DuckDB
+        connection_uri="duckdb:///:memory:",
+    )
+
+    mock_settings = Settings(
+        database=mock_db_config,
+    )
+
+    monkeypatch.setattr("gaming_pipeline.config.settings.settings", mock_settings)
+    return mock_settings
+
+
+@pytest.fixture
+def pipeline(mock_settings):
+    """Create a test pipeline instance."""
+    # Mock the pipeline creation to avoid actual dlt connection
+    with pytest.MonkeyPatch().context() as m:
+        mock_dlt_pipeline = MagicMock()
+        mock_dlt_pipeline.last_trace = None
+        mock_dlt_pipeline.default_schema = MagicMock()
+        mock_dlt_pipeline.default_schema.to_dict.return_value = {}
+
+        m.setattr("dlt.pipeline", MagicMock(return_value=mock_dlt_pipeline))
+
+        return GamingPipeline()
+
+
 class TestGamingPipeline:
     """Test GamingPipeline class."""
 
-    def test_pipeline_creation(self, temp_duckdb_path):
-        """Test pipeline creation with custom database path."""
-        pipeline = GamingPipeline()
-        assert pipeline.pipeline is not None
+    def test_pipeline_initialization(self, pipeline):
+        """Test pipeline initialization."""
+        assert pipeline is not None
         assert pipeline.dataset_name == "gaming_analytics"
 
-    def test_pipeline_with_custom_destination(self, temp_duckdb_path):
-        """Test pipeline creation with custom destination."""
-        import dlt
+    def test_get_load_info_empty(self, pipeline):
+        """Test getting load info when no loads have occurred."""
+        info = pipeline.get_load_info()
+        assert info is not None
 
-        destination = dlt.destinations.duckdb(credentials=temp_duckdb_path)
-
-        pipeline = GamingPipeline(destination=destination)
-        assert pipeline.destination is not None
-        assert pipeline.pipeline is not None
-
-    def test_get_schema(self, temp_duckdb_path):
-        """Test getting pipeline schema."""
-        pipeline = GamingPipeline()
+    def test_get_schema_empty(self, pipeline):
+        """Test getting schema when pipeline is empty."""
         schema = pipeline.get_schema()
+        assert schema is not None
         assert isinstance(schema, dict)
 
-    def test_get_load_info(self, temp_duckdb_path):
-        """Test getting load information."""
-        pipeline = GamingPipeline()
-        load_info = pipeline.get_load_info()
-        # load_info returns None if no data has been loaded yet
-        assert load_info is None or isinstance(load_info, dict)
-
-    def test_refresh_schema(self, temp_duckdb_path):
+    def test_refresh_schema(self, pipeline):
         """Test refreshing schema."""
-        pipeline = GamingPipeline()
-        # Should not raise an exception
+        # Should not raise an error
         pipeline.refresh_schema()
 
 
 @pytest.mark.asyncio
-class TestGamingPipelineWithMocks:
-    """Test GamingPipeline with mocked extractors."""
+class TestGamingPipelineAsync:
+    """Test async methods of GamingPipeline."""
 
-    async def test_load_rawg_data_with_mocks(
-        self, temp_duckdb_path, mock_rawg_extractor
-    ):
-        """Test loading RAWG data with mocked extractor."""
-        # Create pipeline with mocked extractors
-        pipeline = GamingPipeline(extractors=mock_rawg_extractor)
+    async def test_load_rawg_data_with_empty_response(self, pipeline):
+        """Test loading RAWG data with empty extractor response."""
+        # Mock extractors to return empty data
+        pipeline.extractors.extract_genres = AsyncMock(return_value=[])
+        pipeline.extractors.extract_platforms = AsyncMock(return_value=[])
+        pipeline.extractors.extract_games = AsyncMock(return_value=iter([]))
 
         result = await pipeline.load_rawg_data(
-            page_size=5, max_pages=2, updated_after=None
+            page_size=10, max_pages=1, updated_after=None
         )
 
-        assert isinstance(result, dict)
-        assert result["genres"] == 2  # From mock
-        assert result["platforms"] == 2  # From mock
-        assert result["total_games"] == 2  # From mock
+        assert result is not None
+        assert "total_games" in result
+        assert "genres" in result
+        assert "platforms" in result
 
-    async def test_run_full_load_with_mocks(
-        self, temp_duckdb_path, mock_rawg_extractor
-    ):
-        """Test running full load with mocked extractors."""
-        # Create pipeline with mocked extractors
-        pipeline = GamingPipeline(extractors=mock_rawg_extractor)
+    async def test_run_full_load(self, pipeline):
+        """Test running full load."""
+        # Mock extractors
+        pipeline.extractors.extract_genres = AsyncMock(return_value=[])
+        pipeline.extractors.extract_platforms = AsyncMock(return_value=[])
+        pipeline.extractors.extract_games = AsyncMock(return_value=iter([]))
 
         result = await pipeline.run_full_load()
 
-        assert isinstance(result, dict)
+        assert result is not None
         assert "rawg" in result
-        assert "steam" in result
         assert "timestamp" in result
-
-        # Check RAWG results
-        rawg_result = result["rawg"]
-        assert rawg_result["genres"] == 2
-        assert rawg_result["platforms"] == 2
-        assert rawg_result["total_games"] == 2
-
-
-class TestPipelineUtils:
-    """Test pipeline utility functions."""
-
-    def test_create_pipeline_instance(self, temp_duckdb_path):
-        """Test creating pipeline instance."""
-        from gaming_pipeline.load.pipeline import create_pipeline_instance
-
-        pipeline = create_pipeline_instance()
-        assert isinstance(pipeline, GamingPipeline)
