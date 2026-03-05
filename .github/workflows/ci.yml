@@ -94,8 +94,8 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm gaming-analytics-pipeline:latest python --version
-          docker run --rm gaming-analytics-pipeline:latest python main.py version
+          docker run --rm gaming-analytics-pipeline:latest uv run python --version
+          docker run --rm gaming-analytics-pipeline:latest uv run python main.py version
 
   security:
     name: Security Scan
