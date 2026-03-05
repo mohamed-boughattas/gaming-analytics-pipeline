@@ -6,8 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "dlt[duckdb]>=1.0.0",
-    "prefect>=3.0.0",
-    "sqlmesh[duckdb]>=0.100.0",
+    "prefect>=3.0.10,<3.1.0",
+    "sqlmesh>=0.100.0",
     "soda-core-duckdb>=3.0.0",
     "requests>=2.31.0",
     "pydantic>=2.0.0",
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [tool.uv]
-resolution = "highest"
+resolution = "lowest-direct"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gaming_pipeline"]
