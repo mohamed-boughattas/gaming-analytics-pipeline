@@ -1,5 +1,6 @@
 """Script to seed DuckDB with sample data for demo purposes."""
 
+# ruff: noqa: E501  # Allow long lines for SQL statements
 from pathlib import Path
 
 import duckdb
@@ -127,7 +128,7 @@ def seed_sample_data(db_path: str = "data/gaming_analytics.duckdb"):
     try:
         con.execute("""
             CREATE OR REPLACE TABLE gaming_analytics.marts_genres AS
-            SELECT 
+            SELECT
                 g.id,
                 g.name,
                 g.slug,
@@ -155,7 +156,7 @@ def seed_sample_data(db_path: str = "data/gaming_analytics.duckdb"):
     try:
         con.execute("""
             CREATE OR REPLACE TABLE gaming_analytics.marts_platforms AS
-            SELECT 
+            SELECT
                 p.id,
                 p.name,
                 p.slug,
