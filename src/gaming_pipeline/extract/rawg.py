@@ -49,7 +49,7 @@ class RAWGExtractor:
     """Extractor for RAWG API data."""
 
     def __init__(self):
-        self.base_url = config.api.rawg_base_url
+        self.base_url = config.api.base_url
         self.headers = config.api.rawg_headers
         self.session: httpx.AsyncClient | None = None
 
