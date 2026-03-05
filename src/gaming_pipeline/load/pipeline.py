@@ -87,14 +87,6 @@ class GamingPipeline:
             "platforms": len(platforms) if platforms else 0,
         }
 
-    async def load_steam_data(self, app_ids: list[int] | None = None) -> dict[str, Any]:
-        """Load Steam data into pipeline."""
-        logger.info("Starting Steam data load")
-
-        # For now, we'll implement a basic version
-        # In a full implementation, you'd extract Steam data and load it
-        return {"message": "Steam data loading not yet implemented"}
-
     async def run_full_load(self) -> dict[str, Any]:
         """Run full data load for all sources."""
         logger.info("Starting full data load")
@@ -106,12 +98,8 @@ class GamingPipeline:
             updated_after=pendulum_now().subtract(days=30),  # Last 30 days
         )
 
-        # Load Steam data
-        steam_result = await self.load_steam_data()
-
         return {
             "rawg": rawg_result,
-            "steam": steam_result,
             "timestamp": pendulum_now().isoformat(),
         }
 
