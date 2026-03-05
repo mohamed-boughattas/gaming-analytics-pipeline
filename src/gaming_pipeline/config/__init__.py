@@ -2,16 +2,20 @@
 
 from .settings import (
     APIConfig,
-    Config,
     DatabaseConfig,
     PipelineConfig,
+    Settings,
     SodaConfig,
-    config,
+    settings,
 )
+
+# Maintain backward compatibility with old name
+config = settings
 
 __all__ = [
     "config",
-    "Config",
+    "settings",
+    "Settings",
     "DatabaseConfig",
     "APIConfig",
     "PipelineConfig",
