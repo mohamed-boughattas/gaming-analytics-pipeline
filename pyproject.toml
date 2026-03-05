@@ -13,7 +13,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv>=1.0.0",
-    "duckdb>=1.1.0",
+    "duckdb>=1.4.0",
     "click>=8.1.0",
     "rich>=13.0.0",
     "pendulum>=3.0.0",
@@ -65,6 +65,9 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "--cov=src --cov-report=term-missing --cov-report=html"
 filterwarnings = ["ignore::UserWarning", "ignore::DeprecationWarning"]
+markers = [
+    "integration: marks tests as integration tests (requires Prefect server, run with --integration)",
+]
 
 [tool.coverage.run]
 source = ["src"]
