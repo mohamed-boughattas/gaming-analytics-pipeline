@@ -123,8 +123,9 @@ def status(ctx):
         if tables:
             click.echo("\n  Tables:")
             for (table,) in tables:
+                # Table names are from trusted database schema query
                 count = con.execute(
-                    f"SELECT COUNT(*) FROM gaming_analytics.{table}"
+                    f"SELECT COUNT(*) FROM gaming_analytics.{table}"  # nosec
                 ).fetchone()[0]
                 click.echo(f"    • {table}: {count:,} rows")
 
