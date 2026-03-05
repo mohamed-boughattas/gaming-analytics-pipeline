@@ -10,6 +10,7 @@ from gaming_pipeline.load.pipeline import GamingPipeline
 @pytest.fixture
 def mock_settings(monkeypatch):
     """Mock settings for testing."""
+    from gaming_pipeline.config import config
     from gaming_pipeline.config.settings import DatabaseConfig, Settings
 
     mock_db_config = DatabaseConfig(
@@ -21,8 +22,14 @@ def mock_settings(monkeypatch):
         database=mock_db_config,
     )
 
-    monkeypatch.setattr("gaming_pipeline.config.settings.settings", mock_settings)
-    return mock_settings
+    # Patch the config module's database path
+    original_path = config.database.path
+    config.database.path = ":memory:"
+
+    yield mock_settings
+
+    # Restore original path
+    config.database.path = original_path
 
 
 @pytest.fixture
@@ -74,7 +81,13 @@ class TestGamingPipelineAsync:
         # Mock extractors to return empty data
         pipeline.extractors.extract_genres = AsyncMock(return_value=[])
         pipeline.extractors.extract_platforms = AsyncMock(return_value=[])
-        pipeline.extractors.extract_games = AsyncMock(return_value=iter([]))
+
+        # Mock extract_games to return an async generator
+        async def empty_generator(*args, **kwargs):
+            return
+            yield  # pragma: no cover
+
+        pipeline.extractors.extract_games = empty_generator
 
         result = await pipeline.load_rawg_data(
             page_size=10, max_pages=1, updated_after=None
@@ -90,7 +103,13 @@ class TestGamingPipelineAsync:
         # Mock extractors
         pipeline.extractors.extract_genres = AsyncMock(return_value=[])
         pipeline.extractors.extract_platforms = AsyncMock(return_value=[])
-        pipeline.extractors.extract_games = AsyncMock(return_value=iter([]))
+
+        # Mock extract_games to return an async generator
+        async def empty_generator(*args, **kwargs):
+            return
+            yield  # pragma: no cover
+
+        pipeline.extractors.extract_games = empty_generator
 
         result = await pipeline.run_full_load()
 
