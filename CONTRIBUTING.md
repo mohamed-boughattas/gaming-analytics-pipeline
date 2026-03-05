@@ -78,6 +78,12 @@ make format
 # Run linters
 make lint
 
+# Run type checking
+make typecheck
+
+# Run security checks
+make security
+
 # Run tests
 make test
 ```
@@ -234,6 +240,7 @@ gaming-analytics-pipeline/
    - Code must be formatted
    - Linting must pass
    - Type checking must pass
+   - Security checks must pass
 
 2. **Manual Review**
    - At least one maintainer approval

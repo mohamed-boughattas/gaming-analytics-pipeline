@@ -7,6 +7,8 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg)](https://github.com/astral-sh/ruff)
 [![Type checking: ty](https://img.shields.io/badge/type%20checking-ty-blue.svg)](https://github.com/astral-sh/ty)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![Security: bandit](https://img.shields.io/badge/Security-bandit-blue)](https://bandit.readthedocs.io/)
+[![Security: pip-audit](https://img.shields.io/badge/Security-pip--audit-green)](https://pypi.org/project/pip-audit/)
 [![dlt](https://img.shields.io/badge/dlt-data%20loading-blue)](https://dlthub.com/)
 [![Prefect](https://img.shields.io/badge/Prefect-3.x-orange)](https://prefect.io/)
 [![Soda](https://img.shields.io/badge/Soda%20Quality-green)](https://soda.io/)
@@ -233,6 +235,47 @@ marimo edit dashboard/gaming_analytics.py --headless --port 8000
 ```
 
 Access at <http://localhost:8000>
+
+## 🔒 Security
+
+This project uses automated security scanning to ensure code and dependency safety:
+
+### Security Tools
+
+- **[Bandit](https://bandit.readthedocs.io/)**: Code-level security linter
+  - Identifies common security issues in Python code
+  - Runs as non-blocking check in CI/CD pipeline
+  - Configuration: `.bandit`
+
+- **[pip-audit](https://pypi.org/project/pip-audit/)**: Dependency vulnerability scanner
+  - Checks Python dependencies for known vulnerabilities
+  - Audits against PyPI and GitHub Advisory Database
+  - Runs in CI/CD pipeline
+
+### Running Security Checks
+
+```bash
+# Run all security checks
+make security
+
+# Run only bandit
+make bandit
+
+# Run only pip-audit
+make pip-audit
+```
+
+### Security Reports
+
+- Bandit reports are available as artifacts in CI/CD
+- Pip-audit vulnerabilities are shown in CI logs
+- Transitive dependency CVEs are managed by upstream package maintainers
+
+### Best Practices
+
+- Keep dependencies updated regularly
+- Review security reports from CI/CD
+- Report vulnerabilities responsibly through security advisories
 
 ## 🐛 Troubleshooting
 
