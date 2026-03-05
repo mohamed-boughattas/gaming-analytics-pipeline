@@ -24,7 +24,7 @@ services:
   marimo-dashboard:
     build:
       context: .
-      dockerfile: Dockerfile.dashboard
+      dockerfile: Dockerfile.marimo
     container_name: gaming_analytics_dashboard
     volumes:
       - ./data:/app/data
@@ -35,7 +35,7 @@ services:
     environment:
       - PYTHONPATH=/app
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
       interval: 30s
       timeout: 10s
       retries: 3

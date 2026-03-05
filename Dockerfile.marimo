@@ -1,0 +1,41 @@
+# Marimo Dashboard Dockerfile with uv
+FROM python:3.12-slim
+
+# Add metadata labels for best practices
+LABEL maintainer="gaming-analytics-pipeline"
+LABEL version="1.0.0"
+LABEL description="Marimo dashboard for gaming analytics pipeline"
+
+# Install uv
+RUN pip install uv
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy project files
+COPY pyproject.toml uv.lock* ./
+COPY README.md ./
+
+# Install dashboard dependencies using uv
+RUN uv sync --group dashboard
+
+# Copy dashboard code
+COPY dashboard/ ./dashboard/
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Expose port
+EXPOSE 3000
+
+# Healthcheck to verify Marimo is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/ || exit 1
+
+# Start Marimo dashboard
+CMD ["uv", "run", "marimo", "edit", "dashboard/gaming_analytics.py", "--headless", "--host", "0.0.0.0", "--port", "3000"]
