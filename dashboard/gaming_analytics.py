@@ -11,45 +11,53 @@ def _():
     import pandas as pd
     import plotly.express as px
 
-    con = duckdb.connect("/app/data/gaming_analytics.duckdb")
+    from gaming_pipeline.config import settings
+
+    con = duckdb.connect(settings.database.path)
     return duckdb, con, pd, px
 
 
 @app.cell
-def _(con, duckdb):
+def _(con):
     # Load games data
     games_df = con.execute("""
-    show all tables
+        SELECT *
+        FROM marts_games
+        ORDER BY released DESC
+        LIMIT 1000
     """).df()
     return (games_df,)
 
 
 @app.cell
-def _(con, duckdb):
+def _(con):
     # Load genres data
     genres_df = con.execute("""
         SELECT
-            genre_id,
-            name as genre_name,
-            games_count,
-            updated_at
-        FROM mart_genres
-        ORDER BY games_count DESC
+            id as genre_id,
+            name,
+            total_games as games_count,
+            avg_rating,
+            excellent_pct,
+            good_pct
+        FROM marts_genres
+        ORDER BY total_games DESC
     """).df()
     return (genres_df,)
 
 
 @app.cell
-def _(con, duckdb):
+def _(con):
     # Load platforms data
     platforms_df = con.execute("""
         SELECT
-            platform_id,
+            id as platform_id,
             name as platform_name,
-            games_count,
-            updated_at
-        FROM mart_platforms
-        ORDER BY games_count DESC
+            total_games as games_count,
+            avg_rating,
+            year_start
+        FROM marts_platforms
+        ORDER BY total_games DESC
     """).df()
     return (platforms_df,)
 
