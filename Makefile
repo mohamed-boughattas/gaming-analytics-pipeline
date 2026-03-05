@@ -1,4 +1,4 @@
-.PHONY: help install test lint format clean docker-build docker-up docker-down db-status pre-commit pre-commit-install demo all check-env sqlmesh-plan sqlmesh-apply sqlmesh-test dashboard docker-logs docker-restart docker-ps format-check
+.PHONY: help install test lint typecheck format clean docker-build docker-up docker-down db-status pre-commit pre-commit-install demo all check-env sqlmesh-plan sqlmesh-apply sqlmesh-test dashboard docker-logs docker-restart docker-ps format-check seed-data docker-build-marimo docker-up-marimo
 
 # Default target
 help:
@@ -12,10 +12,12 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make test             - Run tests with coverage"
-	@echo "  make lint             - Run linters"
+	@echo "  make lint             - Run linters (ruff)"
+	@echo "  make typecheck        - Run type checking (ty)"
 	@echo "  make format           - Format code"
 	@echo "  make format-check     - Check if code is formatted"
 	@echo "  make pre-commit       - Run pre-commit hooks"
+	@echo "  make seed-data        - Seed database with sample data"
 	@echo "  make dashboard        - Start Marimo dashboard locally"
 	@echo ""
 	@echo "Pipeline:"
@@ -28,18 +30,20 @@ help:
 	@echo "  make sqlmesh-test     - Run SQLMesh tests"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make docker-build     - Build Docker image"
-	@echo "  make docker-up        - Start Docker containers"
-	@echo "  make docker-down      - Stop Docker containers"
+	@echo "  make docker-build     - Build all Docker images"
+	@echo "  make docker-up        - Start all Docker containers"
+	@echo "  make docker-down      - Stop all Docker containers"
 	@echo "  make docker-logs      - Show Docker container logs"
 	@echo "  make docker-restart   - Restart Docker containers"
 	@echo "  make docker-ps        - Show Docker container status"
+	@echo "  make docker-build-marimo  - Build Marimo dashboard image"
+	@echo "  make docker-up-marimo     - Start Marimo dashboard container"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean            - Clean generated files"
 
 # Setup
-all: install lint test
+all: install lint typecheck test
 
 check-env:
 	@test -f .env || (echo "Error: .env file not found. Copy .env.example to .env" && exit 1)
@@ -56,7 +60,8 @@ test:
 
 lint:
 	uv run ruff check src/ tests/
-	@echo "Type checking with ty..."
+
+typecheck:
 	uv run ty check src/
 
 format:
@@ -78,6 +83,9 @@ db-status:
 demo:
 	uv run python main.py run --page-size 10 --max-pages 2
 
+seed-data:
+	uv run python scripts/seed_data.py
+
 # SQLMesh
 sqlmesh-plan:
 	uv run sqlmesh plan
@@ -88,7 +96,7 @@ sqlmesh-apply:
 sqlmesh-test:
 	uv run sqlmesh test
 
-# Dashboard
+# Dashboards
 dashboard:
 	uv run marimo edit dashboard/gaming_analytics.py
 
@@ -114,6 +122,12 @@ docker-restart:
 
 docker-ps:
 	docker compose ps
+
+docker-build-marimo:
+	docker compose build marimo-dashboard
+
+docker-up-marimo:
+	docker compose up -d marimo-dashboard
 
 # Cleanup
 clean:
