@@ -1,4 +1,6 @@
-"""Configuration settings for the gaming analytics pipeline."""
+"""Configuration settings for gaming analytics pipeline."""
+
+from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -80,7 +82,7 @@ class Settings(BaseSettings):
     """Main settings class using Pydantic Settings."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=Path(".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

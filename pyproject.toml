@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [tool.uv]
-resolution = "lowest-direct"
+resolution = "highest"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gaming_pipeline"]

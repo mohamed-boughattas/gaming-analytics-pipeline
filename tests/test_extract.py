@@ -1,7 +1,6 @@
 """Tests for data extraction module."""
 
 import pytest
-
 from gaming_pipeline.extract.rawg import (
     Game,
 )
