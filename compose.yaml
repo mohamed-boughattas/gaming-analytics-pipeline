@@ -24,7 +24,7 @@ services:
   marimo-dashboard:
     build:
       context: .
-      dockerfile: Dockerfile.marimo
+      dockerfile: Dockerfile.dashboard
     container_name: gaming_analytics_dashboard
     volumes:
       - ./data:/app/data
