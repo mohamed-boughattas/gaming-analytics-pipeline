@@ -22,17 +22,21 @@ COPY src/ /app/src/
 COPY main.py /app/
 COPY .env.example ./
 
-# Create data directory
-RUN mkdir -p /app/data
+# Create directories with correct ownership
+RUN mkdir -p /app/data /app/logs
 
-# Create logs directory
-RUN mkdir -p /app/logs
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash appuser && \
+    chown -R appuser:appuser /app
 
 # Expose port for Prefect UI (if needed)
 EXPOSE 4200
 
 # Set environment variables
 ENV PYTHONPATH=/app/src
+
+# Switch to non-root user
+USER appuser
 
 # Default command runs the CLI (using uv to access venv)
 CMD ["uv", "run", "python", "/app/main.py"]

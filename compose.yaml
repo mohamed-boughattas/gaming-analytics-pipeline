@@ -41,6 +41,23 @@ services:
       retries: 3
       start_period: 5s
 
+  evidence-dashboard:
+    image: evidencedev/evidence:latest
+    container_name: gaming_analytics_evidence
+    working_dir: /app
+    volumes:
+      - ./evidence:/app
+      - ./data:/data
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 networks:
   default:
     name: gaming_analytics_network
