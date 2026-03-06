@@ -1,4 +1,4 @@
-.PHONY: help install test lint typecheck format clean docker-build docker-up docker-down db-status pre-commit pre-commit-install demo all check-env sqlmesh-plan sqlmesh-apply sqlmesh-test dashboard docker-logs docker-restart docker-ps format-check seed-data docker-build-marimo docker-up-marimo security bandit pip-audit
+.PHONY: help install test lint lint-all typecheck format clean docker-build docker-up docker-down db-status pre-commit pre-commit-install demo all check-env sqlmesh-plan sqlmesh-apply sqlmesh-test dashboard docker-logs docker-restart docker-ps format-check seed-data evidence docker-build-marimo docker-up-marimo security bandit pip-audit
 
 # Default target
 help:
@@ -13,12 +13,15 @@ help:
 	@echo "Development:"
 	@echo "  make test             - Run tests with coverage"
 	@echo "  make lint             - Run linters (ruff)"
+	@echo "  make lint-all         - Run all quality checks (lint + typecheck + bandit)"
 	@echo "  make typecheck        - Run type checking (ty)"
 	@echo "  make format           - Format code"
 	@echo "  make format-check     - Check if code is formatted"
 	@echo "  make pre-commit       - Run pre-commit hooks"
 	@echo "  make seed-data        - Seed database with sample data"
+	@echo "  make demo             - Run demo with sample data (no API key needed)"
 	@echo "  make dashboard        - Start Marimo dashboard locally"
+	@echo "  make evidence         - Start Evidence dashboard locally"
 	@echo ""
 	@echo "Security:"
 	@echo "  make security         - Run all security checks (bandit + pip-audit)"
@@ -66,6 +69,13 @@ test:
 lint:
 	uv run ruff check src/ tests/
 
+lint-all:
+	@echo "Running all quality checks..."
+	uv run ruff check src/ tests/
+	uv run ty check src/
+	uv run bandit -r src/ -ll -c .bandit
+	@echo "All checks completed!"
+
 typecheck:
 	uv run ty check src/
 
@@ -99,10 +109,13 @@ db-status:
 	uv run python main.py status
 
 demo:
-	uv run python main.py run --page-size 10 --max-pages 2
+	@echo "Seeding database with sample data..."
+	uv run python main.py seed
+	@echo "Demo mode: Sample data seeded successfully!"
+	@echo "You can now run the pipeline or start dashboards without an API key."
 
 seed-data:
-	uv run python scripts/seed_data.py
+	uv run python scripts/seed_sample_data.py
 
 # SQLMesh
 sqlmesh-plan:
@@ -117,6 +130,11 @@ sqlmesh-test:
 # Dashboards
 dashboard:
 	uv run marimo edit dashboard/gaming_analytics.py
+
+evidence:
+	@echo "Starting Evidence dashboard..."
+	@cd evidence && npm run dev
+	@echo "Evidence dashboard available at http://localhost:3000"
 
 # Format check
 format-check:
