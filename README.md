@@ -14,6 +14,7 @@
 [![Soda](https://img.shields.io/badge/Soda%20Quality-green)](https://soda.io/)
 [![SQLMesh](https://img.shields.io/badge/SQLMesh-transform-purple)](https://sqlmesh.com/)
 [![Marimo](https://img.shields.io/badge/Marimo-dashboard-teal)](https://marimo.io/)
+[![Evidence](https://img.shields.io/badge/Evidence-SQL%20dashboard-blue)](https://evidence.dev/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-database-yellow)](https://duckdb.org/)
 
 A modern data engineering pipeline for collecting, processing, and analyzing gaming data from the RAWG API.
@@ -24,9 +25,9 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 
 - **Data Ingestion**: Extract data from RAWG API using dlt
 - **Data Orchestration**: Manage workflows with Prefect 3.x
-- **Data Quality**: Validate data with Soda Core
+- **Data Quality**: Validate data with Soda Core + SQLMesh tests
 - **Data Transformation**: Transform data with SQLMesh
-- **Data Visualization**: Present insights with Marimo
+- **Data Visualization**: Present insights with Marimo and Evidence dashboards
 
 ## 🏗️ Architecture
 
@@ -53,6 +54,26 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 │3.x     │  │Core    │  │Dashboard   │
 └────────┘  └─────────┘  └───────────┘
 ```
+
+## 📈 Data Lineage
+
+For detailed documentation of data flow and transformations, see [docs/data-flow.md](docs/data-flow.md).
+
+## 📊 Dashboard Screenshots
+
+### Marimo Dashboard
+
+![Marimo Dashboard](docs/images/dashboard.png)
+
+Reactive notebook-style dashboard for interactive data exploration
+
+### Evidence Dashboard
+
+![Evidence Dashboard](docs/images/evidence.png)
+
+SQL-native dashboard for production-ready analytics
+
+> **Note**: Replace placeholder screenshots above with actual screenshots of your dashboards.
 
 ## 🚀 Quick Start
 
@@ -90,6 +111,16 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
    python main.py
    ```
 
+### Demo Mode (No API Key Required)
+
+Try the project without a RAWG API key using sample data:
+
+```bash
+make demo
+```
+
+This seeds the database with sample games and allows you to explore the dashboards without API access.
+
 ### Using Docker
 
 1. **Build and run with Docker Compose**:
@@ -101,39 +132,107 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 2. **Access services**:
    - Prefect UI: <http://localhost:4200>
    - Marimo Dashboard: <http://localhost:8000>
+   - Evidence Dashboard: <http://localhost:3000>
 
 ## 📁 Project Structure
 
 ```text
 gaming-analytics-pipeline/
-├── src/gaming_pipeline/
-│   ├── config/           # Configuration management
-│   ├── extract/          # Data extraction (RAWG)
-│   ├── load/             # Data loading with dlt
-│   ├── orchestrate/      # Prefect workflows
-│   ├── quality/          # Soda Core checks
-│   └── transform/        # SQLMesh transformations
-├── tests/                # Pytest tests
-├── data/                 # DuckDB database files
-├── dashboard/            # Marimo dashboard
-├── docs/                 # Documentation (ADR, data lineage, etc.)
-├── logs/                 # Application logs
-├── htmlcov/              # Test coverage reports
-├── .github/workflows/    # CI/CD pipelines
-├── .env.example          # Environment configuration template
-├── .gitignore            # Git ignore patterns
-├── .pre-commit-config.yaml # Pre-commit hooks
-├── LICENSE               # MIT License
-├── README.md             # Project documentation
-├── CONTRIBUTING.md       # Contribution guidelines
-├── main.py               # Main entry point
-├── compose.yaml          # Docker Compose configuration
-├── Dockerfile            # Pipeline container
-├── Dockerfile.dashboard  # Dashboard container
-├── pyproject.toml        # Project dependencies
-├── uv.lock               # Dependency lock file
-├── Makefile              # Development commands
-└── sqlmesh.yaml          # SQLMesh configuration
+├── src/gaming_pipeline/           # Main application package
+│   ├── config/                    # Configuration management (Pydantic Settings)
+│   │   ├── __init__.py
+│   │   └── settings.py            # Environment-based configuration
+│   ├── extract/                   # Data extraction layer
+│   │   ├── __init__.py
+│   │   ├── base.py                # Base extractor interface
+│   │   └── rawg.py                # RAWG API extractor with retry logic
+│   ├── load/                      # Data loading layer
+│   │   ├── __init__.py
+│   │   └── pipeline.py            # dlt pipeline for DuckDB
+│   ├── orchestrate/               # Workflow orchestration
+│   │   ├── __init__.py
+│   │   ├── flows.py               # Prefect 3.x flows
+│   │   └── tasks.py               # Prefect tasks
+│   ├── quality/                   # Data quality layer
+│   │   ├── __init__.py
+│   │   ├── checks.py              # Soda Core integration
+│   │   ├── configuration.py       # Soda configuration
+│   │   └── checks/                # Soda check files
+│   │       ├── staging.yml        # Staging layer checks
+│   │       └── marts.yml          # Mart layer checks
+│   ├── transform/                 # SQLMesh transformations
+│   │   ├── staging/               # Staging models (type casting, null handling)
+│   │   │   ├── stg_games.sql
+│   │   │   ├── stg_genres.sql
+│   │   │   └── stg_platforms.sql
+│   │   └── marts/                 # Mart models (business logic, aggregations)
+│   │       ├── games.sql          # Rating categories, engagement scores
+│   │       ├── genres.sql
+│   │       └── platforms.sql
+│   ├── __init__.py
+│   └── logging_config.py          # Structured logging setup
+│
+├── scripts/                       # Utility scripts
+│   ├── __init__.py
+│   └── seed_sample_data.py        # Demo data generator (no API key needed)
+│
+├── tests/                         # Test suite
+│   ├── test_extract.py            # Extractor tests
+│   ├── test_load.py               # Pipeline tests
+│   ├── test_orchestrate.py        # Orchestration tests (integration)
+│   ├── test_transform.py          # Transformation tests
+│   ├── sqlmesh/                   # SQLMesh native tests
+│   │   ├── README.md
+│   │   ├── test_no_null_game_names.sql
+│   │   ├── test_rating_ranges.sql
+│   │   └── test_engagement_score_positive.sql
+│   └── conftest.py                # Pytest fixtures
+│
+├── evidence/                      # Evidence SQL-native dashboard
+│   ├── package.json               # Node.js dependencies
+│   ├── evidence.yaml              # Evidence configuration
+│   ├── sources/                   # Data source connections
+│   │   └── duckdb.yaml
+│   └── pages/                     # Dashboard pages
+│       ├── index.md               # Overview with KPIs
+│       ├── games.md               # Game analytics
+│       └── genres.md              # Genre analytics
+│
+├── dashboard/                     # Marimo reactive dashboard
+│   └── gaming_analytics.py        # Interactive visualizations
+│
+├── docs/                          # Documentation
+│   ├── adr/                       # Architecture Decision Records
+│   │   ├── 001-choose-duckdb-over-postgresql.md
+│   │   ├── 002-choose-prefect-over-airflow.md
+│   │   └── 003-choose-sqlmesh-over-dbt.md
+│   ├── images/                    # Dashboard screenshots
+│   │   └── README.md
+│   ├── data-flow.md               # Data lineage (Mermaid diagrams)
+│   └── data-retention.md          # Data retention policies
+│
+├── data/                          # DuckDB database files (gitignored)
+├── logs/                          # Application logs (gitignored)
+├── htmlcov/                       # Test coverage reports (gitignored)
+│
+├── .github/workflows/             # CI/CD pipelines
+│   └── ci.yml                     # Lint, test, build, security scan
+│
+├── .env.example                   # Environment configuration template
+├── .gitignore                     # Git ignore patterns
+├── .pre-commit-config.yaml        # Pre-commit hooks
+├── .bandit                        # Bandit security configuration
+├── LICENSE                        # MIT License
+├── README.md                      # Project documentation
+├── CONTRIBUTING.md                # Contribution guidelines
+├── main.py                        # CLI entry point (Click)
+├── compose.yaml                   # Docker Compose (3 services)
+├── Dockerfile                     # Pipeline container (non-root user)
+├── Dockerfile.dashboard           # Marimo dashboard container
+├── pyproject.toml                 # Project dependencies & tool config
+├── uv.lock                        # Dependency lock file
+├── Makefile                       # Development commands
+└── sqlmesh.yaml                   # SQLMesh configuration
 ```
 
 ## 🔧 Configuration
@@ -198,8 +297,8 @@ The pipeline runs in the following order:
 1. **Extract**: Fetch data from RAWG API
 2. **Load**: Store data in DuckDB using dlt
 3. **Transform**: Apply SQLMesh transformations
-4. **Quality**: Validate data with Soda Core
-5. **Visualize**: Update Marimo dashboard
+4. **Quality**: Validate data with Soda Core + SQLMesh tests
+5. **Visualize**: View insights in Marimo or Evidence dashboards
 
 ## 📈 Monitoring
 
@@ -236,6 +335,22 @@ marimo edit dashboard/gaming_analytics.py --headless --port 8000
 ```
 
 Access at <http://localhost:8000>
+
+### Evidence Dashboard
+
+SQL-native analytics dashboard:
+
+```bash
+cd evidence && npm install && npm run dev
+```
+
+Or use the Makefile:
+
+```bash
+make evidence
+```
+
+Access at <http://localhost:3000>
 
 ## 🔒 Security
 
