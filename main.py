@@ -138,6 +138,25 @@ def status(ctx):
 
 
 @cli.command()
+@click.option("--db-path", default="data/gaming_analytics.duckdb", help="Path to DuckDB database")
+@click.pass_context
+def seed(ctx, db_path: str):
+    """Seed database with sample gaming data
+
+    Creates mock data for demo purposes without requiring a RAWG API key.
+    """
+    from scripts.seed_sample_data import seed_database
+
+    click.echo(f"Seeding database at: {db_path}")
+    try:
+        seed_database(db_path=db_path)
+        click.echo("✓ Sample data seeded successfully!")
+    except Exception as e:
+        click.echo(f"✗ Seed failed: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
 def version():
     """Show version information"""
     from gaming_pipeline import __version__
