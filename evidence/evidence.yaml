@@ -1,0 +1,17 @@
+datasources:
+  duckdb:
+    type: duckdb
+    name: DuckDB
+    connection:
+      path: ../data/gaming_analytics.duckdb
+
+pages:
+  - id: index
+    slug: /
+    title: Gaming Analytics
+    display: dashboard
+    queries:
+      - title: Games
+        name: games/index
+      - title: Genres
+        name: genres/index
