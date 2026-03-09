@@ -1,0 +1,122 @@
+# Games Analytics Dashboard
+# Detailed analysis of individual game metrics
+
+title: Games Analytics
+model: games_source
+display_name: Games Analytics
+
+dimensions:
+  - name: release_year
+    display_name: Release Year
+    description: Year the game was released
+    column: release_year
+    type: time
+
+  - name: release_month
+    display_name: Release Month
+    description: Month the game was released (1-12)
+    column: release_month
+    type: time
+
+  - name: rating_category
+    display_name: Rating Category
+    description: Quality rating category
+    column: rating_category
+    type: categorical
+
+  - name: name
+    display_name: Game Name
+    description: Name of the game
+    column: name
+    type: categorical
+
+measures:
+  - name: game_count
+    display_name: Total Games
+    description: Total number of games
+    expression: count(*)
+    format_preset: "#,##0"
+
+  - name: avg_rating
+    display_name: Average Rating
+    description: Average user rating (0-5)
+    expression: avg(rating)
+    format_preset: "#,##0.00"
+
+  - name: max_rating
+    display_name: Highest Rating
+    description: Maximum user rating
+    expression: max(rating)
+    format_preset: "#,##0.00"
+
+  - name: min_rating
+    display_name: Lowest Rating
+    description: Minimum user rating
+    expression: min(rating)
+    format_preset: "#,##0.00"
+
+  - name: avg_metacritic
+    display_name: Avg Metacritic
+    description: Average Metacritic score (0-100)
+    expression: avg(metacritic)
+    format_preset: "#,##0.0"
+
+  - name: total_playtime
+    display_name: Total Playtime (hrs)
+    description: Sum of all game playtimes
+    expression: sum(playtime)
+    format_preset: "#,##0"
+
+  - name: avg_playtime
+    display_name: Avg Playtime (hrs)
+    description: Average playtime per game
+    expression: avg(playtime)
+    format_preset: "#,##0.0"
+
+  - name: total_reviews
+    display_name: Total Reviews
+    description: Total number of user reviews
+    expression: sum(reviews_count)
+    format_preset: "#,##0"
+
+  - name: avg_reviews_per_game
+    display_name: Avg Reviews/Game
+    description: Average number of reviews per game
+    expression: avg(reviews_count)
+    format_preset: "#,##0.0"
+
+  - name: total_suggestions
+    display_name: Total Suggestions
+    description: Total game suggestions
+    expression: sum(suggestions_count)
+    format_preset: "#,##0"
+
+  - name: avg_engagement
+    display_name: Avg Engagement Score
+    description: Average engagement score
+    expression: avg(engagement_score)
+    format_preset: "#,##0.00"
+
+  - name: max_engagement
+    display_name: Max Engagement Score
+    description: Highest engagement score
+    expression: max(engagement_score)
+    format_preset: "#,##0.00"
+
+  - name: excellent_games
+    display_name: Excellent Games
+    description: Games with rating 4.0+
+    expression: countIf(rating >= 4.0)
+    format_preset: "#,##0"
+
+  - name: good_games
+    display_name: Good Games
+    description: Games with rating 3.0-3.99
+    expression: countIf(rating >= 3.0 AND rating < 4.0)
+    format_preset: "#,##0"
+
+  - name: avg_rating_per_game
+    display_name: Avg Ratings/Game
+    description: Average ratings per game
+    expression: avg(ratings_count)
+    format_preset: "#,##0.0"

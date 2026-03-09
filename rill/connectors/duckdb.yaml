@@ -1,0 +1,4 @@
+type: connector
+driver: duckdb
+init_sql: |
+  ATTACH 'data/gaming_analytics.duckdb' AS gaming_analytics (READ_ONLY);

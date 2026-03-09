@@ -1,0 +1,68 @@
+# Gaming Overview Dashboard
+# High-level KPIs and metrics for the gaming analytics pipeline
+
+title: Gaming Overview
+model: games_source
+display_name: Gaming Overview
+
+dimensions:
+  - name: release_year
+    display_name: Release Year
+    description: Year the game was released
+    column: release_year
+    type: time
+
+  - name: rating_category
+    display_name: Rating Category
+    description: Quality rating category
+    column: rating_category
+    type: categorical
+
+measures:
+  - name: total_games
+    display_name: Total Games
+    description: Total number of games
+    expression: count(*)
+    format_preset: "#,##0"
+
+  - name: avg_rating
+    display_name: Average Rating
+    description: Average user rating (0-5)
+    expression: avg(rating)
+    format_preset: "#,##0.00"
+
+  - name: avg_metacritic
+    display_name: Avg Metacritic
+    description: Average Metacritic score (0-100)
+    expression: avg(metacritic)
+    format_preset: "#,##0.0"
+
+  - name: avg_engagement
+    display_name: Avg Engagement Score
+    description: Average engagement score across all games
+    expression: avg(engagement_score)
+    format_preset: "#,##0.00"
+
+  - name: total_playtime
+    display_name: Total Playtime (hrs)
+    description: Sum of all game playtimes
+    expression: sum(playtime)
+    format_preset: "#,##0"
+
+  - name: total_reviews
+    display_name: Total Reviews
+    description: Total number of user reviews
+    expression: sum(reviews_count)
+    format_preset: "#,##0"
+
+  - name: excellent_games_count
+    display_name: Excellent Games
+    description: Count of games rated as Excellent (4.0+)
+    expression: countIf(rating >= 4.0)
+    format_preset: "#,##0"
+
+  - name: excellent_pct
+    display_name: Excellent Games %
+    description: Percentage of games rated as Excellent
+    expression: (countIf(rating >= 4.0) * 100.0) / count(*)
+    format_preset: "#,##0.0%"

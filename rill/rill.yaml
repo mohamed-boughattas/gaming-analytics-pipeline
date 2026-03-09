@@ -1,0 +1,4 @@
+# Rill Project Configuration for Gaming Analytics Pipeline
+compiler: rill-beta
+title: "Gaming Analytics"
+description: "Dashboard for gaming data pipeline"

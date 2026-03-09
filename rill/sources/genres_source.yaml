@@ -1,0 +1,28 @@
+# Genres Source - Aggregated genre analytics from SQLMesh marts layer
+# https://docs.rill.dev/reference/project-files/sources
+
+type: source
+connector: duckdb
+sql: |
+  SELECT
+    id,
+    name,
+    slug,
+    total_games,
+    avg_rating,
+    avg_metacritic,
+    max_rating,
+    min_rating,
+    total_ratings,
+    avg_ratings_per_game,
+    avg_playtime,
+    excellent_games,
+    good_games,
+    average_games,
+    below_average_games,
+    excellent_pct,
+    good_pct,
+    average_pct,
+    below_average_pct
+  FROM gaming_analytics.marts.genres
+  WHERE id IS NOT NULL
