@@ -113,6 +113,7 @@ venv.bak/
 *.db
 *.sqlite
 *.duckdb
+data/backups/
 
 # IDE files
 .vscode/
@@ -144,3 +145,6 @@ prefect.db
 # Soda Core
 .soda/
 soda_*.log
+
+# Detect-secrets
+.secrets.baseline

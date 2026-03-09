@@ -32,8 +32,8 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run Ruff
-        run: uv run ruff check src/ tests/
+      - name: Run Ruff (including security rules)
+        run: uv run ruff check src/ tests/ --select E,F,W,I,B,C4,UP,SIM,S
 
       - name: Run ty
         run: uv run ty check src/
@@ -126,15 +126,21 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Run Bandit security linter
-        continue-on-error: true
+      - name: Run Ruff security rules
         run: |
-          uv run bandit -r . -ll -c .bandit -f json -o bandit-report.json || true
-          uv run bandit -r . -ll -c .bandit || true
+          uv run ruff check src/ tests/ --select S --output-format=json > ruff-security-report.json || true
+          uv run ruff check src/ tests/ --select S || true
 
-      - name: Upload Bandit results
-        if: always() && hashFiles('bandit-report.json') != ''
+      - name: Run uv audit
+        run: uv audit --preview-features audit || true
+
+      - name: Run detect-secrets
+        run: |
+          uv run detect-secrets scan || true
+
+      - name: Upload Ruff security results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bandit-report
-          path: bandit-report.json
+          name: ruff-security-report
+          path: ruff-security-report.json

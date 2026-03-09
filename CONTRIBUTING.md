@@ -157,11 +157,11 @@ def process_games(games: list[dict[str, Any]]) -> dict[str, int]:
 ```python
 def extract_games(page_size: int = 20, max_pages: int | None = None) -> list[Game]:
     """Extract games from RAWG API.
-    
+
     Args:
         page_size: Number of games per page
         max_pages: Maximum number of pages to fetch
-    
+
     Returns:
         List of Game objects
     """
@@ -200,7 +200,7 @@ gaming-analytics-pipeline/
 │   └── transform/       # SQLMesh transformations
 ├── tests/               # Test files
 ├── docs/                # Documentation
-├── dashboard/           # Marimo dashboard
+├── marimo/           # Marimo dashboard
 └── scripts/             # Utility scripts
 ```
 
