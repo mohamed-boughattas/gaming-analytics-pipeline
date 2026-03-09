@@ -1,42 +1,42 @@
 # Dockerfile for Gaming Analytics Pipeline
 FROM python:3.12-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+LABEL maintainer="gaming-analytics-pipeline"
+LABEL version="1.0.0"
+LABEL description="Gaming analytics pipeline with Prefect, SQLMesh, and dlt"
 
-# Set working directory
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+
 WORKDIR /app
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Install uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy dependency files AND README (required for build metadata)
+# Copy dependency files
 COPY pyproject.toml uv.lock README.md ./
 
-# Install dependencies using uv sync --frozen (uses locked versions)
+# Install dependencies
 RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY src/ /app/src/
 COPY main.py /app/
-COPY .env.example ./
 
-# Create directories with correct ownership
+# Create directories
 RUN mkdir -p /app/data /app/logs
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app
-
-# Expose port for Prefect UI (if needed)
-EXPOSE 4200
-
-# Set environment variables
-ENV PYTHONPATH=/app/src
-
-# Switch to non-root user
 USER appuser
 
-# Default command runs the CLI (using uv to access venv)
+EXPOSE 4200
+
+ENV PYTHONPATH=/app/src
+
+# Default command
 CMD ["uv", "run", "python", "/app/main.py"]

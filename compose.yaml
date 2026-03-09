@@ -8,14 +8,13 @@ services:
       - ./data:/app/data
     environment:
       - DATABASE_PATH=/app/data/gaming_analytics.duckdb
-      - MOTHERDUCK_TOKEN=${MOTHERDUCK_TOKEN:-}
-      - PREFECT_API_URL=${PREFECT_API_URL:-http://localhost:4200/api}
+      - PREFECT_API_URL=${PREFECT_API_URL:-http://0.0.0.0:4200/api}
     ports:
       - "4200:4200"
     restart: unless-stopped
-    command: ["prefect", "server", "start", "--host", "0.0.0.0"]
+    command: ["uv", "run", "prefect", "server", "start", "--host", "0.0.0.0"]
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://0.0.0.0:4200/api/health')"]
+      test: ["CMD", "curl", "-f", "http://localhost:4200/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -24,30 +23,35 @@ services:
   marimo-dashboard:
     build:
       context: .
-      dockerfile: Dockerfile.dashboard
-    container_name: gaming_analytics_dashboard
+      dockerfile: Dockerfile.marimo
+    container_name: gaming_analytics_marimo
     volumes:
       - ./data:/app/data
-      - ./dashboard:/app/dashboard
+      - ./marimo:/app/marimo
+      - ./src:/app/src
     ports:
-      - "8000:8000"
+      - "2718:2718"
     restart: unless-stopped
     environment:
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app:/app/src
+      - DATABASE_PATH=/app/data/gaming_analytics.duckdb
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
+      test: ["CMD", "curl", "-f", "http://localhost:2718/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 5s
 
   evidence-dashboard:
-    image: evidencedev/evidence:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.evidence
     container_name: gaming_analytics_evidence
-    working_dir: /app
     volumes:
-      - ./evidence:/app
-      - ./data:/data
+      - ./evidence/pages:/app/pages
+      - ./evidence/sources:/app/sources
+      - ./evidence/.evidence:/app/.evidence
+      - ./data:/app/data
     ports:
       - "3000:3000"
     restart: unless-stopped
@@ -56,8 +60,25 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
+
+  rill-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.rill
+    container_name: gaming_analytics_rill
+    volumes:
+      - ./data:/app/data
+      - ./rill:/app/rill
+    ports:
+      - "9009:9009"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9009/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
       start_period: 10s
 
-networks:
-  default:
-    name: gaming_analytics_network
+volumes:
+  evidence_node_modules:
