@@ -1,0 +1,12 @@
+# SQLMesh Configuration for Gaming Analytics Pipeline
+
+gateways:
+  local:
+    connection:
+      type: duckdb
+      database: ../data/gaming_analytics.duckdb
+
+default_gateway: local
+
+model_defaults:
+  dialect: duckdb
