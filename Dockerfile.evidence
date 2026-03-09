@@ -1,0 +1,30 @@
+# Evidence Dashboard Dockerfile
+FROM node:18-alpine
+
+LABEL maintainer="gaming-analytics-pipeline"
+LABEL version="1.0.0"
+LABEL description="Evidence SQL-native dashboard for gaming analytics"
+
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# Copy and install dependencies
+COPY evidence/package.json evidence/package-lock.json* ./
+RUN npm ci
+
+# Copy application files
+COPY evidence/ ./
+
+# Pre-build Evidence to generate template and install its dependencies
+RUN npx evidence build --skipSources 2>/dev/null || true && \
+    npm install
+
+# Create non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
+USER appuser
+
+EXPOSE 3000
+
+CMD ["npx", "evidence", "dev", "--host", "0.0.0.0"]
