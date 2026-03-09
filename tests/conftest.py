@@ -98,9 +98,9 @@ def api_keys_available() -> bool:
 @pytest.fixture
 def mock_rawg_extractor():
     """Mock RAWG extractor for testing with cleanup."""
-    from gaming_pipeline.extract.rawg import RAWGExtractor
+    from gaming_pipeline.extract.base import DefaultExtractors
 
-    class MockRAWGExtractor(RAWGExtractor):
+    class MockRAWGExtractor(DefaultExtractors):
         async def extract_genres(self):
             return [
                 {"id": 1, "name": "Action", "slug": "action"},
@@ -112,15 +112,6 @@ def mock_rawg_extractor():
                 {"id": 1, "name": "PC", "slug": "pc"},
                 {"id": 2, "name": "PlayStation", "slug": "playstation"},
             ]
-
-        async def extract_games(self, page_size=20, max_pages=None, updated_after=None):
-            from gaming_pipeline.extract.rawg import Game
-
-            sample_games = [
-                Game(id=1, name="Game 1", rating=4.5, released="2024-01-01"),
-                Game(id=2, name="Game 2", rating=3.8, released="2024-01-02"),
-            ]
-            yield sample_games
 
     # Provide the mock extractor
     yield MockRAWGExtractor()

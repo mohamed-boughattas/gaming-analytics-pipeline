@@ -2,10 +2,13 @@
 
 from pathlib import Path
 
+# Base directory for SQLMesh models
+SQLMESH_BASE = Path("sqlmesh/models")
+
 
 def test_staging_tables_exist():
     """Test that staging SQL files exist."""
-    staging_dir = Path("src/gaming_pipeline/transform/staging")
+    staging_dir = SQLMESH_BASE / "staging"
 
     sql_files = list(staging_dir.glob("*.sql"))
     assert len(sql_files) >= 2  # At least games and genres
@@ -17,7 +20,7 @@ def test_staging_tables_exist():
 
 def test_mart_tables_exist():
     """Test that mart SQL files exist."""
-    marts_dir = Path("src/gaming_pipeline/transform/marts")
+    marts_dir = SQLMESH_BASE / "marts"
 
     sql_files = list(marts_dir.glob("*.sql"))
     assert len(sql_files) >= 2  # At least games and genres
@@ -29,7 +32,7 @@ def test_mart_tables_exist():
 
 def test_sql_files_have_content():
     """Test that SQL files contain actual SQL code."""
-    marts_dir = Path("src/gaming_pipeline/transform/marts")
+    marts_dir = SQLMESH_BASE / "marts"
 
     for sql_file in marts_dir.glob("*.sql"):
         content = sql_file.read_text()
@@ -42,7 +45,7 @@ def test_sql_files_have_content():
 
 def test_games_mart_has_rating_category():
     """Test that games mart has rating category logic."""
-    games_mart = Path("src/gaming_pipeline/transform/marts/games.sql")
+    games_mart = SQLMESH_BASE / "marts/games.sql"
     content = games_mart.read_text()
 
     # Should have rating category CASE statement
@@ -54,7 +57,7 @@ def test_games_mart_has_rating_category():
 
 def test_games_mart_has_engagement_score():
     """Test that games mart has engagement score calculation."""
-    games_mart = Path("src/gaming_pipeline/transform/marts/games.sql")
+    games_mart = SQLMESH_BASE / "marts/games.sql"
     content = games_mart.read_text()
 
     # Should have engagement score calculation
@@ -64,7 +67,7 @@ def test_games_mart_has_engagement_score():
 
 def test_games_mart_unnests_genres():
     """Test that games mart unnests genres from JSON."""
-    games_mart = Path("src/gaming_pipeline/transform/marts/games.sql")
+    games_mart = SQLMESH_BASE / "marts/games.sql"
     content = games_mart.read_text()
 
     # Should have UNNEST for genres
@@ -74,7 +77,7 @@ def test_games_mart_unnests_genres():
 
 def test_staging_games_has_type_casting():
     """Test that staging games has type casting."""
-    stg_games = Path("src/gaming_pipeline/transform/staging/stg_games.sql")
+    stg_games = SQLMESH_BASE / "staging/stg_games.sql"
     content = stg_games.read_text()
 
     # Should have TRY_CAST for dates and numbers
@@ -86,8 +89,8 @@ def test_staging_games_has_type_casting():
 
 def test_all_files_use_sqlmesh_syntax():
     """Test that transformation files use SQLMesh MODEL DSL."""
-    marts_dir = Path("src/gaming_pipeline/transform/marts")
-    staging_dir = Path("src/gaming_pipeline/transform/staging")
+    marts_dir = SQLMESH_BASE / "marts"
+    staging_dir = SQLMESH_BASE / "staging"
 
     all_sql_files = list(marts_dir.glob("*.sql")) + list(staging_dir.glob("*.sql"))
 

@@ -2,44 +2,24 @@
 
 import pytest
 
-from gaming_pipeline.extract.rawg import (
-    Game,
-)
+from gaming_pipeline.extract.dlt_source import rawg_source
 
 
-class TestGameModel:
-    """Test Game model validation."""
+class TestDLTSource:
+    """Test dlt RAWG source configuration."""
 
-    def test_game_creation(self):
-        """Test basic game creation."""
-        game_data = {
-            "id": 12345,
-            "name": "Test Game",
-            "rating": 4.5,
-            "released": "2024-01-01",
-        }
+    def test_rawg_source_creation(self):
+        """Test basic source creation."""
+        source = rawg_source(page_size=20, max_pages=5)
+        assert source is not None
+        # The source name may be 'rawg' or 'rest_api' depending on dlt version
+        assert source.name in ("rawg", "rest_api")
 
-        game = Game(**game_data)
-        assert game.id == 12345
-        assert game.name == "Test Game"
-        assert game.rating == 4.5
-        assert game.released == "2024-01-01"
-
-    def test_game_optional_fields(self):
-        """Test game creation with optional fields."""
-        game_data = {
-            "id": 12345,
-            "name": "Test Game",
-            "rating": 4.5,
-            "metacritic": 85,
-            "platforms": [{"platform": {"id": 1, "name": "PC"}}],
-            "genres": [{"id": 1, "name": "Action"}],
-        }
-
-        game = Game(**game_data)
-        assert game.metacritic == 85
-        assert game.platforms is not None
-        assert game.genres is not None
+    def test_rawg_source_with_updated_after(self):
+        """Test source creation with incremental loading."""
+        source = rawg_source(page_size=50, max_pages=10, updated_after="2024-01-01")
+        assert source is not None
+        assert source.name in ("rawg", "rest_api")
 
 
 @pytest.mark.asyncio
@@ -57,11 +37,3 @@ class TestMockExtractors:
         platforms = await mock_rawg_extractor.extract_platforms()
         assert len(platforms) == 2
         assert platforms[0]["name"] == "PC"
-
-        # Test games
-        games_batch = []
-        async for games in mock_rawg_extractor.extract_games():
-            games_batch.extend(games)
-
-        assert len(games_batch) == 2
-        assert games_batch[0].name == "Game 1"
