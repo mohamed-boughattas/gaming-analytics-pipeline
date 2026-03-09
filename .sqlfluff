@@ -1,0 +1,18 @@
+[sqlfluff]
+dialect = duckdb
+max_line_length = 88
+exclude_rules = RF01, RF02, RF03, RF04, RF05, RF06
+
+# SQLMesh MODEL blocks use non-standard syntax - exclude transform and test directories
+[sqlfluff:exclude]
+paths = sqlmesh
+
+[sqlfluff:rules]
+capitalisation = lower
+
+[sqlfluff:indentation]
+tab_space_size = 2
+indent_unit = space
+
+[sqlfluff:templating]
+unwrap_wrapped_queries = True
