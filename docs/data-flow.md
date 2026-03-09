@@ -19,7 +19,7 @@ graph LR
     G --> J[marts_genres]
     H --> K[marts_platforms]
 
-    I --> L[Marimo Dashboard]
+    I --> L[Marimo Dashboard<br/>marimo/]
     I --> M[Evidence Dashboard]
     J --> L
     J --> M
@@ -61,6 +61,7 @@ The pipeline ingests data from external APIs:
 - Stores data in DuckDB with JSON fields preserved
 
 **Tables**:
+
 - `rawg_games` - Raw game data with nested JSON arrays
 - `rawg_genres` - Genre metadata
 - `rawg_platforms` - Platform metadata
@@ -72,12 +73,14 @@ The pipeline ingests data from external APIs:
 Performs light transformations to prepare data for business logic:
 
 **Transformations**:
+
 - Type casting (e.g., strings to dates, JSON to arrays)
 - NULL value handling with `TRY_CAST`
 - Column naming standardization
 - Data quality validation
 
 **Tables**:
+
 - `stg_games` - Cleaned game data
 - `stg_genres` - Cleaned genre data
 - `stg_platforms` - Cleaned platform data
@@ -89,12 +92,14 @@ Performs light transformations to prepare data for business logic:
 Business-ready data with aggregations and derived metrics:
 
 **Metrics Calculated**:
+
 - `rating_category`: Excellent, Good, Average, Below Average, Poor
 - `engagement_score`: Weighted combination of rating, metacritic, and ratings_count
 - `release_year` / `release_month`: Extracted from release date
 - `genre_count` / `platform_count` / `store_count`: Array lengths
 
 **Tables**:
+
 - `marts_games` - Enriched game analytics
 - `marts_genres` - Aggregated genre statistics
 - `marts_platforms` - Platform analytics
@@ -132,7 +137,7 @@ flowchart TD
     end
 
     subgraph Visualization
-        MARIMO[Marimo Dashboard]
+        MARIMO[Marimo Dashboard<br/>marimo/]
         EVID[Evidence Dashboard]
     end
 
@@ -154,11 +159,11 @@ flowchart TD
 
 ### Games Pipeline
 
-| Stage | Table | Key Transformations |
-|--------|-------|-------------------|
-| Ingestion | rawg_games | Schema inference, JSON preservation |
-| Staging | stg_games | `TRY_CAST` for dates/numbers, NULL handling |
-| Mart | marts_games | `UNNEST` for JSON arrays, rating categories, engagement score |
+| Stage     | Table       | Key Transformations                                           |
+| --------- | ----------- | ------------------------------------------------------------- |
+| Ingestion | rawg_games  | Schema inference, JSON preservation                           |
+| Staging   | stg_games   | `TRY_CAST` for dates/numbers, NULL handling                   |
+| Mart      | marts_games | `UNNEST` for JSON arrays, rating categories, engagement score |
 
 ### Engagement Score Formula
 
@@ -169,19 +174,20 @@ COALESCE(ratings_count, 0) / 100.0 * 0.3 AS engagement_score
 ```
 
 **Weights**:
+
 - 40% User rating
 - 30% Critical reception (Metacritic)
 - 30% Community engagement (ratings count)
 
 ## Refresh Strategy
 
-| Table | Materialization | Refresh |
-|-------|----------------|---------|
-| rawg_* | Append | Daily (incremental) or on-demand (full) |
-| stg_* | Full | After raw data refresh |
-| marts_games | Incremental | After staging refresh |
-| marts_genres | Full | After staging refresh |
-| marts_platforms | Full | After staging refresh |
+| Table           | Materialization | Refresh                                 |
+| --------------- | --------------- | --------------------------------------- |
+| rawg\_\*        | Append          | Daily (incremental) or on-demand (full) |
+| stg\_\*         | Full            | After raw data refresh                  |
+| marts_games     | Incremental     | After staging refresh                   |
+| marts_genres    | Full            | After staging refresh                   |
+| marts_platforms | Full            | After staging refresh                   |
 
 ## Quality Checks
 

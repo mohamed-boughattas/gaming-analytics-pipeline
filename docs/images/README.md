@@ -5,7 +5,7 @@ This directory contains screenshots of the project's dashboards.
 ## Files to Add
 
 1. **dashboard.png** - Screenshot of the Marimo dashboard
-   - Run `marimo edit dashboard/gaming_analytics.py`
+   - Run `marimo edit marimo/gaming_analytics.py`
    - Take a screenshot showing visualizations
    - Save as `dashboard.png`
 

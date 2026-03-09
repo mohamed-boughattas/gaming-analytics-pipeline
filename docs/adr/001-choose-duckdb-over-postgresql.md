@@ -9,7 +9,7 @@ Accepted
 We needed to select a database for storing and analyzing gaming data from the RAWG API. The primary use cases include:
 
 - Storing raw API responses
-- Running analytical queries for dashboards
+- Running analytical queries for marimos
 - Supporting development and testing workflows
 - Potential cloud deployment options
 
@@ -49,7 +49,7 @@ We maintain the option to use MotherDuck for cloud deployment, which provides:
 ## Consequences
 
 - **Positive**: Simplified development workflow, easier demos, lower costs
-- **Positive**: Fast analytical queries for dashboard
+- **Positive**: Fast analytical queries for marimo
 - **Neutral**: Need to consider scale limits (can migrate to PostgreSQL if needed)
 - **Negative**: Not suitable for high-concurrency transactional workloads
 - **Neutral**: Trade-off between operational simplicity and production scalability
