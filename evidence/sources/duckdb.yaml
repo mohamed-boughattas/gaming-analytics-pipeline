@@ -1,4 +1,0 @@
-type: duckdb
-name: DuckDB
-connection:
-  path: ../data/gaming_analytics.duckdb

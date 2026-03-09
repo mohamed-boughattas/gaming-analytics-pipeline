@@ -1,50 +1,142 @@
 ---
 title: Gaming Analytics Dashboard
-page_type: dashboard
-priority: 1
 ---
 
-# 🎮 Gaming Analytics
+# Gaming Analytics Dashboard
 
-Welcome to the Gaming Analytics dashboard. This dashboard provides insights into video game data from the RAWG API.
+Welcome to the Gaming Analytics dashboard powered by Evidence, DuckDB, and SQLMesh.
 
-## 📊 Key Metrics
+## Key Metrics
 
-```sql games_kpi
+```sql games_overview
 SELECT
-    COUNT(*) AS total_games,
-    AVG(rating) AS avg_rating,
-    AVG(metacritic) AS avg_metacritic,
-    SUM(playtime) AS total_playtime_hours
-FROM gaming_analytics.marts_games
+  total_games,
+  avg_rating,
+  avg_metacritic,
+  total_playtime_hours,
+  avg_engagement_score
+FROM games_overview
 ```
 
-## 📈 Top Rated Games
+<BigValue
+  data={games_overview}
+  value=total_games
+  title="Total Games"
+/>
+
+<BigValue
+  data={games_overview}
+  value=avg_rating
+  title="Avg Rating"
+  fmt="#.00"
+/>
+
+<BigValue
+  data={games_overview}
+  value=avg_engagement_score
+  title="Avg Engagement Score"
+  fmt="#.00"
+/>
+
+<BigValue
+  data={games_overview}
+  value=total_playtime_hours
+  title="Total Playtime (hrs)"
+  fmt="#,##0"
+/>
+
+## Top Rated Games
 
 ```sql top_games
 SELECT
-    name,
-    rating,
-    metacritic,
-    release_year
-FROM gaming_analytics.marts_games
-WHERE rating >= 9.0
-ORDER BY rating DESC, metacritic DESC
-LIMIT 10
+  name,
+  rating,
+  metacritic,
+  release_year,
+  rating_category,
+  engagement_score,
+  genre_count,
+  platform_count
+FROM top_games
 ```
 
-## 🏷️ Genre Distribution
+<DataTable data={top_games} />
 
-```sql genre_dist
+## Rating Distribution
+
+```sql rating_dist
 SELECT
-    UNNEST(genre_names) AS genre,
-    COUNT(*) AS game_count
-FROM gaming_analytics.marts_games
-GROUP BY genre
-ORDER BY game_count DESC
-LIMIT 10
+  rating_category,
+  game_count
+FROM rating_dist
 ```
+
+<BarChart
+  data={rating_dist}
+  x=rating_category
+  y=game_count
+  title="Games by Rating Category"
+/>
+
+## Engagement vs Rating
+
+```sql engagement_scatter
+SELECT
+  name,
+  rating,
+  engagement_score,
+  rating_category,
+  release_year
+FROM engagement_scatter
+```
+
+<ScatterPlot
+  data={engagement_scatter}
+  x=rating
+  y=engagement_score
+  title="Engagement Score vs Rating"
+  color=rating_category
+/>
+
+## Genre Analytics
+
+```sql genre_analytics
+SELECT
+  genre_name,
+  total_games,
+  avg_rating,
+  avg_metacritic,
+  excellent_pct
+FROM genre_analytics
+```
+
+<DataTable data={genre_analytics} />
+
+<BarChart
+  data={genre_analytics}
+  x=genre_name
+  y=excellent_pct
+  title="% Excellent Games by Genre"
+/>
+
+## Games by Release Year
+
+```sql games_by_year
+SELECT
+  release_year,
+  game_count,
+  avg_rating,
+  avg_engagement
+FROM games_by_year
+```
+
+<LineChart
+  data={games_by_year}
+  x=release_year
+  y=game_count
+  title="Games by Release Year"
+/>
 
 ---
 
-*Built with [Evidence](https://evidence.dev/) - SQL-native analytics dashboard*
+_Built with [Evidence](https://evidence.dev) - SQL-native analytics powered by SQLMesh_
