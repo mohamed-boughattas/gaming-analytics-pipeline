@@ -6,17 +6,20 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "dlt[duckdb]>=1.0.0",
-    "prefect>=3.0.10,<3.1.0",
+    "prefect>=3.0.0,<3.2.0",
     "sqlmesh>=0.100.0",
-    "soda-core-duckdb>=3.0.0",
     "requests>=2.31.0",
-    "pydantic>=2.9.0,<3.0.0",
+    "pydantic>=2.11.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv>=1.0.0",
     "duckdb>=1.4.0",
     "click>=8.1.0",
     "rich>=13.0.0",
     "pendulum>=3.0.0",
+    "marimo>=0.15.1",
+    "plotly>=6.6.0",
+    "websockets>=10.0,<11.0",
+    "soda-duckdb>=4.1.1",
 ]
 
 [tool.uv]
@@ -37,11 +40,9 @@ dev = [
     "pytest-cov>=4.0.0",
     "pre-commit>=3.6.0",
     "ty>=0.0.20",
-    "bandit>=1.7.0",
-    "pip-audit>=2.7.0",
+    "sqlfluff>=3.0.0",
+    "detect-secrets>=1.5.0",
 ]
-
-dashboard = ["marimo>=0.11.0", "plotly>=5.24.0", "duckdb>=1.1.0"]
 
 ty = ["ty>=0.0.20"]
 
@@ -59,17 +60,27 @@ select = [
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
     "SIM", # flake8-simplify
+    "S",   # flake8-bandit (security)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"] # Allow assert statements in tests
+"tests/*" = [
+    "S101",
+    "S311",
+    "S110",
+] # Allow assert, random, and try-except-pass in tests
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "--cov=src --cov-report=term-missing --cov-report=html"
-filterwarnings = ["ignore::UserWarning", "ignore::DeprecationWarning"]
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::requests.packages.urllib3.exceptions.DependencyWarning",
+    "ignore::requests.exceptions.RequestsDependencyWarning",
+]
 markers = [
     "integration: marks tests as integration tests (requires Prefect server, run with --integration)",
 ]
