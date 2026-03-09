@@ -1,17 +1,21 @@
-"""Base classes and protocols for data extractors."""
+"""Base classes for data extraction.
+
+Note: The extraction logic has been consolidated into dlt_source.py
+which uses dlt's built-in REST API source. This module provides
+backwards-compatible interface for the orchestration layer.
+"""
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Any
-
-from pendulum import DateTime
-
-if TYPE_CHECKING:
-    pass
+from typing import Any
 
 
 class ExtractorBundle(ABC):
-    """Protocol for data extractor bundles."""
+    """Protocol for data extractor bundles.
+
+    Note: This interface is maintained for backwards compatibility.
+    The actual extraction is now handled by dlt's REST API source
+    in dlt_source.py.
+    """
 
     @abstractmethod
     async def extract_genres(self) -> list[dict[str, Any]]:
@@ -23,66 +27,38 @@ class ExtractorBundle(ABC):
         """Extract platform data."""
         pass
 
-    @abstractmethod
-    def extract_games(
-        self, page_size: int, max_pages: int | None, updated_after: "DateTime | None"
-    ) -> AsyncGenerator[list[dict[str, Any]], None]:
-        """Extract game data as batches."""
-        pass
-
 
 class DefaultExtractors(ExtractorBundle):
-    """Default extractors using actual API calls."""
+    """Default extractors using dlt REST API source.
+
+    This class provides a simplified interface for the orchestration layer.
+    For direct dlt usage, use rawg_source() from dlt_source.py directly.
+    """
 
     async def extract_genres(self) -> list[dict[str, Any]]:
-        """Extract genre data using default extractor."""
-        from .rawg import extract_rawg_genres
+        """Extract genre data using dlt source."""
+        from .dlt_source import rawg_source
 
-        genres = await extract_rawg_genres()
-        # Convert to dict (handle both Pydantic model and dict)
-        result = []
-        for genre in genres:
-            if hasattr(genre, "model_dump"):
-                result.append(genre.model_dump())  # type: ignore[attr-defined]
-            elif isinstance(genre, dict):
-                result.append(genre)
-        return result
+        source = rawg_source()
+        # Access the genres resource and extract data
+        genres_data = []
+        for resource in source.resources:
+            resource_name = getattr(resource, "name", str(resource))
+            if resource_name == "rawg_genres":
+                for item in resource:
+                    genres_data.append(item)
+        return genres_data
 
     async def extract_platforms(self) -> list[dict[str, Any]]:
-        """Extract platform data using default extractor."""
-        from .rawg import extract_rawg_platforms
+        """Extract platform data using dlt source."""
+        from .dlt_source import rawg_source
 
-        platforms = await extract_rawg_platforms()
-        # Convert to dict (handle both Pydantic model and dict)
-        result = []
-        for platform in platforms:
-            if hasattr(platform, "model_dump"):
-                result.append(platform.model_dump())  # type: ignore[attr-defined]
-            elif isinstance(platform, dict):
-                result.append(platform)
-        return result
-
-    def extract_games(
-        self, page_size: int, max_pages: int | None, updated_after: "DateTime | None"
-    ) -> AsyncGenerator[list[dict[str, Any]], None]:
-        """Extract game data using default extractor."""
-        return self._extract_games_impl(page_size, max_pages, updated_after)
-
-    async def _extract_games_impl(
-        self, page_size: int, max_pages: int | None, updated_after: "DateTime | None"
-    ) -> AsyncGenerator[list[dict[str, Any]], None]:
-        """Implementation of game extraction."""
-        from .rawg import extract_rawg_games
-
-        async for games_batch in extract_rawg_games(
-            page_size, max_pages, updated_after
-        ):
-            if games_batch:
-                # Convert to dict (handle both Pydantic model and dict)
-                result = []
-                for game in games_batch:
-                    if hasattr(game, "model_dump"):
-                        result.append(game.model_dump())
-                    elif isinstance(game, dict):
-                        result.append(game)
-                yield result
+        source = rawg_source()
+        # Access the platforms resource and extract data
+        platforms_data = []
+        for resource in source.resources:
+            resource_name = getattr(resource, "name", str(resource))
+            if resource_name == "rawg_platforms":
+                for item in resource:
+                    platforms_data.append(item)
+        return platforms_data
