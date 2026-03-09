@@ -1,6 +1,7 @@
 """Prefect tasks for gaming analytics pipeline."""
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from pendulum import now as pendulum_now
@@ -28,7 +29,7 @@ async def extract_rawg_genres_task() -> list[dict[str, Any]]:
     logger.info("Starting RAWG genres extraction")
     genres = await extract_rawg_genres()
 
-    # Create artifact with summary - create_markdown_artifact is sync in newer Prefect
+    # Create artifact with summary
     create_markdown_artifact(
         key="rawg-genres-summary",
         markdown=f"## RAWG Genres Extraction\n\nExtracted {len(genres)} genres",
@@ -50,7 +51,7 @@ async def extract_rawg_platforms_task() -> list[dict[str, Any]]:
     logger.info("Starting RAWG platforms extraction")
     platforms = await extract_rawg_platforms()
 
-    # Create artifact with summary - create_markdown_artifact is sync
+    # Create artifact with summary
     create_markdown_artifact(
         key="rawg-platforms-summary",
         markdown=(
@@ -92,7 +93,6 @@ async def load_rawg_data_task(
 - **Load Timestamp**: {pendulum_now().isoformat()}
 """
 
-    # Create artifact with load summary
     create_markdown_artifact(
         key="rawg-load-summary",
         markdown=markdown_content,
@@ -120,7 +120,6 @@ async def run_full_pipeline_task(
 
     # Create comprehensive artifact
     rawg_result = result.get("rawg", {})
-
     markdown_content = f"""
 # Gaming Analytics Pipeline Summary
 
@@ -140,7 +139,6 @@ async def run_full_pipeline_task(
 - Updated After: {updated_after_days} days
 """
 
-    # Create comprehensive artifact
     create_markdown_artifact(
         key="pipeline-execution-summary",
         markdown=markdown_content,
@@ -164,8 +162,7 @@ def get_pipeline_schema_task() -> dict[str, Any]:
 
 
 @task(
-    name="Get Load Information",
-    description="Get information about the last pipeline load",
+    name="Get Load Information", description="Get information about last pipeline load"
 )
 def get_load_info_task() -> dict[str, Any]:
     """Get information about last load."""
@@ -190,3 +187,77 @@ def refresh_schema_task() -> None:
     pipeline.refresh_schema()
 
     logger.info("Pipeline schema refreshed successfully")
+
+
+@task(
+    name="Run SQLMesh Transformations",
+    description="Run SQLMesh transformations to create staging and marts",
+    retries=2,
+    retry_delay_seconds=60,
+)
+async def run_sqlmesh_task() -> dict[str, Any]:
+    """Run SQLMesh transformations."""
+    logger.info("Starting SQLMesh transformations")
+
+    from gaming_pipeline.transform.sqlmesh_runner import SQLMeshRunner
+
+    runner = SQLMeshRunner()
+    result = runner.apply()
+
+    # Create artifact with SQLMesh summary
+    markdown_content = f"""
+## SQLMesh Transformations Summary
+
+- **Status**: {"Success" if result.get("returncode") == 0 else "Failed"}
+- **Return Code**: {result.get("returncode", "N/A")}
+- **Execution Time**: {pendulum_now().isoformat()}
+"""
+
+    create_markdown_artifact(
+        key="sqlmesh-transformation-summary",
+        markdown=markdown_content,
+        description="Summary of SQLMesh transformations",
+    )
+
+    logger.info(f"SQLMesh transformations completed: {result}")
+    return result
+
+
+@task(
+    name="Run Soda Quality Checks",
+    description="Run Soda v4 data quality checks on transformed data",
+    retries=1,
+    retry_delay_seconds=30,
+)
+async def run_soda_scan_task(
+    checks_layer: str = "marts",
+) -> dict[str, Any]:
+    """Run Soda quality checks using v4 contracts."""
+    logger.info(f"Starting Soda scan for {checks_layer} layer")
+
+    from gaming_pipeline.quality.checks import SodaScanner
+
+    checks_path = (
+        Path(__file__).parent.parent / "quality" / "checks" / f"{checks_layer}.yml"
+    )
+
+    scanner = SodaScanner()
+    result = scanner.run_checks(contract_path=checks_path)
+
+    # Create artifact with scan summary
+    markdown_content = f"""
+## Soda Quality Scan Summary
+
+- **Layer**: {checks_layer}
+- **Status**: {"Passed" if result.get("passed") else "Failed"}
+- **Execution Time**: {pendulum_now().isoformat()}
+"""
+
+    create_markdown_artifact(
+        key=f"soda-scan-{checks_layer}",
+        markdown=markdown_content,
+        description=f"Summary of Soda quality checks for {checks_layer}",
+    )
+
+    logger.info(f"Soda scan completed: {result}")
+    return result

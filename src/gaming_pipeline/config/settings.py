@@ -12,6 +12,7 @@ class DatabaseConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="DB_",
         extra="ignore",
+        env_file=None,
     )
 
     type: str = "duckdb"
@@ -32,6 +33,7 @@ class APIConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="RAWG_",
         extra="ignore",
+        env_file=None,
     )
 
     api_key: str | None = Field(default=None, alias="API_KEY")
@@ -57,6 +59,7 @@ class PipelineConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="PIPELINE_",
         extra="ignore",
+        env_file=None,
     )
 
     batch_size: int = 100
@@ -72,6 +75,7 @@ class SodaConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="SODA_",
         extra="ignore",
+        env_file=None,
     )
 
     checks_path: str = "src/gaming_pipeline/quality/checks"
@@ -99,7 +103,6 @@ class Settings(BaseSettings):
 
     # Additional environment variables (for compatibility)
     database_path: str | None = Field(default=None, alias="DATABASE_PATH")
-    motherduck_token: str | None = Field(default=None, alias="MOTHERDUCK_TOKEN")
     prefect_api_url: str | None = Field(default=None, alias="PREFECT_API_URL")
 
     @property

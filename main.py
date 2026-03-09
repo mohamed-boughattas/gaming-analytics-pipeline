@@ -1,6 +1,11 @@
 import asyncio
 import sys
+import warnings
 from pathlib import Path
+
+# Suppress non-critical warnings
+warnings.filterwarnings("ignore", message="Config key.*is set in model_config but will be ignored")
+warnings.filterwarnings("ignore", message="urllib3.*or chardet.*doesn't match a supported version")
 
 import click
 
@@ -108,13 +113,29 @@ def status(ctx):
     try:
         con = duckdb.connect(str(db_path))
 
-        # Check tables
-        tables = con.execute("""
-            SELECT table_name
+        # Check tables across all schemas
+        schemas = con.execute(
+            """
+            SELECT DISTINCT table_schema
             FROM information_schema.tables
-            WHERE table_schema = 'gaming_analytics'
-            ORDER BY table_name
-        """).fetchall()
+            WHERE table_schema IN ('raw', 'staging', 'marts')
+            ORDER BY table_schema
+        """
+        ).fetchall()
+
+        tables = con.execute(
+            """
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE table_schema IN ('raw', 'staging', 'marts')
+            ORDER BY table_schema, table_name
+        """
+        ).fetchall()
+
+        click.echo("Pipeline Status:")
+        click.echo(f"  Database: {db_path}")
+        click.echo(f"  Schemas: {len(schemas)} ({', '.join([s[0] for s in schemas])})")
+        click.echo(f"  Tables: {len(tables)}")
 
         click.echo("Pipeline Status:")
         click.echo(f"  Database: {db_path}")
@@ -122,10 +143,34 @@ def status(ctx):
 
         if tables:
             click.echo("\n  Tables:")
-            for (table,) in tables:
-                # Table names are from trusted database schema query
+            current_schema = None
+            for schema, table in tables:
+                # Show schema grouping
+                if schema != current_schema:
+                    if current_schema:
+                        click.echo(f"\n  {current_schema}:")
+                    click.echo(f"  {schema}:")
+                    current_schema = schema
+
+                # Validate table name to prevent SQL injection
+                # Table names come from database schema query, but we whitelist-verify
+                allowed_tables = {
+                    "rawg_games",
+                    "rawg_genres",
+                    "rawg_platforms",
+                    "stg_games",
+                    "stg_genres",
+                    "stg_platforms",
+                    "games",
+                    "genres",
+                    "platforms",
+                }
+                if table not in allowed_tables:
+                    click.echo(f"  ✗ Unknown table: {table}", err=True)
+                    continue
+
                 count = con.execute(
-                    f"SELECT COUNT(*) FROM gaming_analytics.{table}"  # nosec
+                    f"SELECT COUNT(*) FROM {schema}.{table}"
                 ).fetchone()[0]
                 click.echo(f"    • {table}: {count:,} rows")
 
@@ -137,20 +182,23 @@ def status(ctx):
         sys.exit(1)
 
 
-@cli.command()
-@click.option("--db-path", default="data/gaming_analytics.duckdb", help="Path to DuckDB database")
+@cli.command("seed")
 @click.pass_context
-def seed(ctx, db_path: str):
+def seed(ctx):
     """Seed database with sample gaming data
 
     Creates mock data for demo purposes without requiring a RAWG API key.
+    This is perfect for testing and exploring the dashboards.
     """
-    from scripts.seed_sample_data import seed_database
+    from gaming_pipeline.demo import seed_database
 
-    click.echo(f"Seeding database at: {db_path}")
+    click.echo("Seeding database with sample data...")
     try:
-        seed_database(db_path=db_path)
+        result = seed_database()
         click.echo("✓ Sample data seeded successfully!")
+        click.echo(f"  - {result['games']} games")
+        click.echo(f"  - {result['genres']} genres")
+        click.echo(f"  - {result['platforms']} platforms")
     except Exception as e:
         click.echo(f"✗ Seed failed: {e}", err=True)
         sys.exit(1)
@@ -159,9 +207,14 @@ def seed(ctx, db_path: str):
 @cli.command()
 def version():
     """Show version information"""
-    from gaming_pipeline import __version__
+    from importlib.metadata import version
 
-    click.echo(f"Gaming Analytics Pipeline v{__version__}")
+    try:
+        pkg_version = version("gaming_analytics_pipeline")
+        click.echo(f"Gaming Analytics Pipeline v{pkg_version}")
+    except Exception:
+        # Fallback to hardcoded version if metadata is not available
+        click.echo("Gaming Analytics Pipeline v0.1.0")
 
 
 if __name__ == "__main__":

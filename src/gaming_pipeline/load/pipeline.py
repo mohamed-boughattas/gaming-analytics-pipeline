@@ -9,7 +9,7 @@ from pendulum import DateTime
 from pendulum import now as pendulum_now
 
 from gaming_pipeline.config import config
-from gaming_pipeline.extract.base import DefaultExtractors, ExtractorBundle
+from gaming_pipeline.extract.dlt_source import rawg_source
 
 if TYPE_CHECKING:
     pass
@@ -18,19 +18,25 @@ logger = logging.getLogger(__name__)
 
 
 class GamingPipeline:
-    """dlt pipeline for gaming analytics data."""
+    """dlt pipeline for gaming analytics data.
+
+    This class handles loading data from the RAWG API using dlt's
+    built-in REST API source. The source provides:
+    - Automatic retry with exponential backoff
+    - Rate limiting support
+    - Pagination handling
+    - Schema inference
+    """
 
     def __init__(
         self,
         destination: Destination | None = None,
         dataset_name: str = "gaming_analytics",
-        extractors: ExtractorBundle | None = None,
     ):
         self.destination = destination or dlt.destinations.duckdb(
             credentials=config.database.connection_uri
         )
         self.dataset_name = dataset_name
-        self.extractors = extractors or DefaultExtractors()
         self.pipeline = self._create_pipeline()
 
     def _create_pipeline(self) -> dlt.Pipeline:
@@ -47,45 +53,59 @@ class GamingPipeline:
         self,
         page_size: int = 20,
         max_pages: int | None = None,
-        updated_after: "DateTime | None" = None,
+        updated_after: "DateTime | str | None" = None,
     ) -> dict[str, Any]:
-        """Load RAWG data into pipeline."""
-        logger.info("Starting RAWG data load")
+        """Load RAWG data into pipeline using dlt source.
 
-        # Load genres
-        genres = await self.extractors.extract_genres()
-        if genres:
-            load_info = self.pipeline.run(
-                genres, table_name="rawg_genres", write_disposition="replace"
-            )
-            logger.info(f"Loaded {len(genres)} genres: {load_info}")
+        Args:
+            page_size: Number of items per page (max 100).
+            max_pages: Maximum number of pages to fetch. None for all.
+            updated_after: ISO date string or DateTime for incremental loading.
 
-        # Load platforms
-        platforms = await self.extractors.extract_platforms()
-        if platforms:
-            load_info = self.pipeline.run(
-                platforms, table_name="rawg_platforms", write_disposition="replace"
-            )
-            logger.info(f"Loaded {len(platforms)} platforms: {load_info}")
+        Returns:
+            Dictionary with load statistics.
+        """
+        logger.info("Starting RAWG data load via dlt REST API source")
 
-        # Load games in batches
-        total_games = 0
-        games_generator = self.extractors.extract_games(
-            page_size, max_pages, updated_after
+        # Convert DateTime to ISO string if needed
+        updated_after_str: str | None = None
+        if updated_after:
+            if isinstance(updated_after, DateTime):
+                updated_after_str = updated_after.to_iso8601_string()
+            else:
+                updated_after_str = updated_after
+
+        # Create the dlt source
+        source = rawg_source(
+            page_size=page_size,
+            max_pages=max_pages,
+            updated_after=updated_after_str,
         )
-        async for games_batch in games_generator:
-            if games_batch:
-                load_info = self.pipeline.run(
-                    games_batch, table_name="rawg_games", write_disposition="append"
-                )
-                total_games += len(games_batch)
-                logger.info(f"Loaded batch of {len(games_batch)} games: {load_info}")
 
-        return {
-            "total_games": total_games,
-            "genres": len(genres) if genres else 0,
-            "platforms": len(platforms) if platforms else 0,
+        # Run the pipeline with the source
+        load_info = self.pipeline.run(source)
+
+        # Extract statistics from load info
+        jobs = (
+            load_info.load_packages[0].jobs["completed_jobs"]
+            if load_info.load_packages
+            else []
+        )
+        stats = {
+            "total_games": 0,
+            "genres": 0,
+            "platforms": 0,
         }
+        for job in jobs:
+            if "games" in job.job_file_info.table_name:
+                stats["total_games"] += job.job_file_info.rows  # type: ignore[attr-defined]
+            elif "genres" in job.job_file_info.table_name:
+                stats["genres"] = job.job_file_info.rows  # type: ignore[attr-defined]
+            elif "platforms" in job.job_file_info.table_name:
+                stats["platforms"] = job.job_file_info.rows  # type: ignore[attr-defined]
+
+        logger.info(f"RAWG data load complete: {stats}")
+        return stats
 
     async def run_full_load(self) -> dict[str, Any]:
         """Run full data load for all sources."""

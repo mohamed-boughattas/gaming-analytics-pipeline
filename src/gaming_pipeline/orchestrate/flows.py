@@ -17,6 +17,8 @@ from gaming_pipeline.orchestrate.tasks import (
     load_rawg_data_task,
     refresh_schema_task,
     run_full_pipeline_task,
+    run_soda_scan_task,
+    run_sqlmesh_task,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,10 +36,18 @@ async def daily_pipeline_flow(
     logger = get_run_logger()
     logger.info("Starting daily gaming analytics pipeline")
 
-    # Run full pipeline
+    # Step 1: Run full pipeline (extract + load via DLT)
     result = await run_full_pipeline_task(
-        page_size=page_size, max_pages=max_pages, updated_after_days=updated_after_days
+        page_size=page_size,  # type: ignore[invalid-argument-type]
+        max_pages=max_pages,  # type: ignore[invalid-argument-type]
+        updated_after_days=updated_after_days,  # type: ignore[invalid-argument-type]
     )
+
+    # Step 2: Run SQLMesh transformations
+    sqlmesh_result = await run_sqlmesh_task()
+
+    # Step 3: Run Soda quality checks
+    soda_result = await run_soda_scan_task(checks_layer="marts")  # type: ignore[invalid-argument-type]
 
     # Get schema and load info
     schema = get_pipeline_schema_task()
@@ -48,6 +58,8 @@ async def daily_pipeline_flow(
 
     final_result = {
         "pipeline_result": result,
+        "sqlmesh_result": sqlmesh_result,
+        "soda_result": soda_result,
         "schema": schema,
         "load_info": load_info,
         "execution_time": pendulum_now().isoformat(),
@@ -69,12 +81,19 @@ async def full_load_pipeline_flow(
     logger = get_run_logger()
     logger.info("Starting full load gaming analytics pipeline")
 
-    # Run full pipeline with larger batch sizes
+    # Step 1: Run full pipeline with larger batch sizes
     result = await run_full_pipeline_task(
-        page_size=page_size,
-        max_pages=max_pages,
-        updated_after_days=365,  # Full year of data
+        page_size=page_size,  # type: ignore[invalid-argument-type]
+        max_pages=max_pages,  # type: ignore[invalid-argument-type]
+        # Full year of data
+        updated_after_days=365,  # type: ignore[invalid-argument-type]
     )
+
+    # Step 2: Run SQLMesh transformations
+    sqlmesh_result = await run_sqlmesh_task()
+
+    # Step 3: Run Soda quality checks
+    soda_result = await run_soda_scan_task(checks_layer="marts")  # type: ignore[invalid-argument-type]
 
     # Get schema and load info
     schema = get_pipeline_schema_task()
@@ -85,6 +104,8 @@ async def full_load_pipeline_flow(
 
     final_result = {
         "pipeline_result": result,
+        "sqlmesh_result": sqlmesh_result,
+        "soda_result": soda_result,
         "schema": schema,
         "load_info": load_info,
         "execution_time": pendulum_now().isoformat(),
@@ -135,7 +156,9 @@ async def load_only_flow(
 
     # Load RAWG data
     rawg_result = await load_rawg_data_task(
-        page_size=page_size, max_pages=max_pages, updated_after=updated_after
+        page_size=page_size,  # type: ignore[invalid-argument-type]
+        max_pages=max_pages,  # type: ignore[invalid-argument-type]
+        updated_after=updated_after,  # type: ignore[invalid-argument-type]
     )
 
     result = {
@@ -154,7 +177,6 @@ async def load_only_flow(
 # For production deployment, see Prefect documentation for deployment commands.
 
 
-# Example usage functions
 async def run_daily_pipeline() -> dict[str, Any]:
     """Run daily pipeline."""
     return await daily_pipeline_flow()

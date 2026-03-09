@@ -18,6 +18,7 @@ from .tasks import (
     load_rawg_data_task,
     refresh_schema_task,
     run_full_pipeline_task,
+    run_sqlmesh_task,
 )
 
 __all__ = [
@@ -34,6 +35,10 @@ __all__ = [
     "extract_rawg_genres_task",
     "extract_rawg_platforms_task",
     "load_rawg_data_task",
+    "run_sqlmesh_task",
+    "get_load_info_task",
+    "get_pipeline_schema_task",
+    "refresh_schema_task",
     "run_full_pipeline_task",
     "get_pipeline_schema_task",
     "get_load_info_task",
