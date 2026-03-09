@@ -5,10 +5,11 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg)](https://github.com/astral-sh/ruff)
+[![SQL Linting: sqlfluff](https://img.shields.io/badge/SQL%20linting-sqlfluff-blue)](https://sqlfluff.com/)
 [![Type checking: ty](https://img.shields.io/badge/type%20checking-ty-blue.svg)](https://github.com/astral-sh/ty)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Security: bandit](https://img.shields.io/badge/Security-bandit-blue)](https://bandit.readthedocs.io/)
-[![Security: pip-audit](https://img.shields.io/badge/Security-pip--audit-green)](https://pypi.org/project/pip-audit/)
+[![Security: Ruff S](https://img.shields.io/badge/Security-Ruff%20S-blue)](https://github.com/astral-sh/ruff)
+[![Security: detect-secrets](https://img.shields.io/badge/Security-detect--secrets-green)](https://github.com/Yelp/detect-secrets)
 [![dlt](https://img.shields.io/badge/dlt-data%20loading-blue)](https://dlthub.com/)
 [![Prefect](https://img.shields.io/badge/Prefect-3.x-orange)](https://prefect.io/)
 [![Soda](https://img.shields.io/badge/Soda%20Quality-green)](https://soda.io/)
@@ -16,6 +17,7 @@
 [![Marimo](https://img.shields.io/badge/Marimo-dashboard-teal)](https://marimo.io/)
 [![Evidence](https://img.shields.io/badge/Evidence-SQL%20dashboard-blue)](https://evidence.dev/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-database-yellow)](https://duckdb.org/)
+[![Docker](https://img.shields.io/badge/Docker-containerized-blue)](https://www.docker.com/)
 
 A modern data engineering pipeline for collecting, processing, and analyzing gaming data from the RAWG API.
 
@@ -53,6 +55,11 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 │Prefect  │  │Soda    │  │Marimo     │
 │3.x     │  │Core    │  │Dashboard   │
 └────────┘  └─────────┘  └───────────┘
+                              │
+                         ┌────▼────┐
+                         │Evidence  │
+                         │Dashboard │
+                         └──────────┘
 ```
 
 ## 📈 Data Lineage
@@ -123,16 +130,38 @@ This seeds the database with sample games and allows you to explore the dashboar
 
 ### Using Docker
 
-1. **Build and run with Docker Compose**:
+All services can run in Docker containers. The entire stack is containerized:
+
+1. **Build and start all services**:
 
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
 
-2. **Access services**:
-   - Prefect UI: <http://localhost:4200>
-   - Marimo Dashboard: <http://localhost:8000>
-   - Evidence Dashboard: <http://localhost:3000>
+2. **Check container health status**:
+
+   ```bash
+   docker compose ps
+   ```
+
+3. **Access services**:
+   - **Prefect UI**: <http://localhost:4200>
+   - **Marimo Dashboard**: <http://localhost:2718>
+   - **Evidence Dashboard**: <http://localhost:3000>
+
+4. **View logs**:
+
+   ```bash
+   docker compose logs -f
+   ```
+
+5. **Stop all services**:
+
+   ```bash
+   docker compose down
+   ```
+
+For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
 
 ## 📁 Project Structure
 
@@ -190,15 +219,17 @@ gaming-analytics-pipeline/
 │
 ├── evidence/                      # Evidence SQL-native dashboard
 │   ├── package.json               # Node.js dependencies
-│   ├── evidence.yaml              # Evidence configuration
+│   ├── evidence.config.yaml        # Evidence configuration
 │   ├── sources/                   # Data source connections
-│   │   └── duckdb.yaml
+│   │   └── gaming_analytics/      # DuckDB connection
+│   │       ├── connection.yaml
+│   │       └── *.sql              # SQL queries
 │   └── pages/                     # Dashboard pages
 │       ├── index.md               # Overview with KPIs
 │       ├── games.md               # Game analytics
 │       └── genres.md              # Genre analytics
 │
-├── dashboard/                     # Marimo reactive dashboard
+├── marimo/                     # Marimo reactive dashboard
 │   └── gaming_analytics.py        # Interactive visualizations
 │
 ├── docs/                          # Documentation
@@ -221,14 +252,16 @@ gaming-analytics-pipeline/
 ├── .env.example                   # Environment configuration template
 ├── .gitignore                     # Git ignore patterns
 ├── .pre-commit-config.yaml        # Pre-commit hooks
-├── .bandit                        # Bandit security configuration
+├── .sqlfluff                      # SQL linter configuration
 ├── LICENSE                        # MIT License
 ├── README.md                      # Project documentation
+├── DOCKER_SETUP.md                # Docker setup guide
 ├── CONTRIBUTING.md                # Contribution guidelines
 ├── main.py                        # CLI entry point (Click)
 ├── compose.yaml                   # Docker Compose (3 services)
-├── Dockerfile                     # Pipeline container (non-root user)
-├── Dockerfile.dashboard           # Marimo dashboard container
+├── Dockerfile                     # Prefect pipeline container
+├── Dockerfile.marimo              # Marimo dashboard container
+├── Dockerfile.evidence            # Evidence dashboard container
 ├── pyproject.toml                 # Project dependencies & tool config
 ├── uv.lock                        # Dependency lock file
 ├── Makefile                       # Development commands
@@ -243,7 +276,6 @@ gaming-analytics-pipeline/
 | ------------------ | --------------------------- | -------- |
 | `RAWG_API_KEY`     | RAWG API key                | Yes      |
 | `DATABASE_PATH`    | Path to DuckDB database     | No       |
-| `MOTHERDUCK_TOKEN` | MotherDuck token (optional) | No       |
 | `PREFECT_API_URL`  | Prefect API URL             | No       |
 
 ### API Keys
@@ -320,23 +352,25 @@ View Soda Core results:
 python -m src.gaming_pipeline.quality.checks
 ```
 
-### Marimo Dashboard
+### Marimo Dashboard Overview
 
 Interactive dashboard for data exploration:
 
 ```bash
-marimo edit dashboard/gaming_analytics.py
+marimo edit marimo/gaming_analytics.py --no-token
 ```
 
-Or run the dashboard server:
+Or run dashboard server:
 
 ```bash
-marimo edit dashboard/gaming_analytics.py --headless --port 8000
+marimo edit marimo/gaming_analytics.py --headless --host 0.0.0.0 --port 2718 --no-token
 ```
 
-Access at <http://localhost:8000>
+**Note**: Use `--host 0.0.0.0` (not `localhost`) for Docker compatibility and `--no-token` to disable cloud auth prompts.
 
-### Evidence Dashboard
+Access at <http://localhost:2718>
+
+### Evidence Dashboard Overview
 
 SQL-native analytics dashboard:
 
@@ -344,7 +378,7 @@ SQL-native analytics dashboard:
 cd evidence && npm install && npm run dev
 ```
 
-Or use the Makefile:
+Or use Makefile:
 
 ```bash
 make evidence
@@ -358,15 +392,25 @@ This project uses automated security scanning to ensure code and dependency safe
 
 ### Security Tools
 
-- **[Bandit](https://bandit.readthedocs.io/)**: Code-level security linter
-  - Identifies common security issues in Python code
-  - Runs as non-blocking check in CI/CD pipeline
-  - Configuration: `.bandit`
+- **[Ruff S Rules](https://docs.astral.sh/ruff/rules/#flake8-bandit-s)**: Code-level security linting
+  - Integrated into Ruff's existing workflow
+  - Identifies common security issues (SQL injection, hardcoded secrets, etc.)
+  - Configured in `pyproject.toml` under `[tool.ruff.lint]`
 
-- **[pip-audit](https://pypi.org/project/pip-audit/)**: Dependency vulnerability scanner
+- **[uv audit](https://docs.astral.sh/uv/guides/integration/dependency-bots/)**: Built-in dependency vulnerability scanner
   - Checks Python dependencies for known vulnerabilities
   - Audits against PyPI and GitHub Advisory Database
-  - Runs in CI/CD pipeline
+  - Runs in CI/CD pipeline with `uv audit --preview-features audit`
+
+- **[Gitleaks](https://github.com/gitleaks/gitleaks)**: Secrets detection
+  - Scans code for accidentally committed secrets (API keys, tokens, passwords)
+  - Runs as pre-commit hook and in CI/CD
+  - Configured in `.pre-commit-config.yaml`
+
+- **[sqlfluff](https://sqlfluff.com/)**: SQL linting
+  - Identifies SQL anti-patterns and syntax errors
+  - Enforces consistent SQL style
+  - Configured for DuckDB dialect in `.sqlfluff`
 
 ### Running Security Checks
 
@@ -374,17 +418,21 @@ This project uses automated security scanning to ensure code and dependency safe
 # Run all security checks
 make security
 
-# Run only bandit
-make bandit
+# Run Ruff security rules
+make security
 
-# Run only pip-audit
-make pip-audit
+# Run uv audit (dependency scanner)
+uv audit --preview-features audit
+
+# Run gitleaks (secrets detection)
+uv run gitleaks detect --no-git
 ```
 
 ### Security Reports
 
-- Bandit reports are available as artifacts in CI/CD
-- Pip-audit vulnerabilities are shown in CI logs
+- Ruff security issues are shown in CI logs and pre-commit
+- uv audit vulnerabilities are shown in CI logs
+- Gitleaks secrets detection runs in pre-commit and CI
 - Transitive dependency CVEs are managed by upstream package maintainers
 
 ### Best Practices
@@ -392,6 +440,7 @@ make pip-audit
 - Keep dependencies updated regularly
 - Review security reports from CI/CD
 - Report vulnerabilities responsibly through security advisories
+- Never commit secrets to repository (use environment variables)
 
 ## 🐛 Troubleshooting
 
@@ -401,17 +450,17 @@ make pip-audit
 
 - **Solution**: Add delays between requests or upgrade API plan
 
-**Issue**: DuckDB database locked
-
-- **Solution**: Ensure no other processes are using the database
-
 **Issue**: Docker container fails to start
 
-- **Solution**: Check environment variables in `.env` file
+- **Solution**: Check health status with `docker compose ps` and view logs with `docker compose logs <service>`
+
+**Issue**: Cannot access dashboard from outside container
+
+- **Solution**: Ensure port mappings in `compose.yaml` are correct and services bind to `0.0.0.0`
 
 ## 🤝 Contributing
 
-1. Fork the repository
+1. Fork repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
@@ -421,10 +470,10 @@ make pip-audit
 
 ### Code Style
 
-We use [Ruff](https://github.com/astral-sh/ruff) for linting and formatting, and [ty](https://github.com/astral-sh/ty) for type checking:
+We use [Ruff](https://github.com/astral-sh/ruff) for linting and formatting, [ty](https://github.com/astral-sh/ty) for type checking, and [sqlfluff](https://sqlfluff.com/) for SQL linting:
 
 ```bash
-# Lint code
+# Lint Python code
 ruff check src/ tests/
 
 # Format code
@@ -432,6 +481,15 @@ ruff format src/ tests/
 
 # Type checking
 ty check src/
+
+# Lint SQL files
+sqlfluff lint evidence/
+```
+
+All these checks are available via pre-commit hooks:
+
+```bash
+pre-commit run --all-files
 ```
 
 ### Adding New Features
@@ -444,7 +502,7 @@ ty check src/
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under MIT License.
 
 ## 🙏 Acknowledgments
 
@@ -454,6 +512,7 @@ This project is licensed under the MIT License.
 - [Soda Core](https://www.soda.io/) for data quality
 - [SQLMesh](https://sqlmesh.com/) for transformations
 - [Marimo](https://marimo.io/) for visualization
+- [Evidence](https://evidence.dev/) for SQL dashboards
 
 ## 📞 Support
 
