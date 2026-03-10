@@ -1,7 +1,7 @@
 # Rill Dashboard Dockerfile
 # https://docs.rill.dev/deploy/docker
 
-FROM rilldata/rill:latest
+FROM --platform=linux/amd64 rilldata/rill:latest
 
 LABEL maintainer="gaming-analytics-pipeline"
 LABEL version="1.0.0"
@@ -17,10 +17,6 @@ RUN mkdir -p /app/data
 
 # Expose Rill's default port
 EXPOSE 9009
-
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:9009/ || exit 1
 
 # Override the default entrypoint and start Rill with proper arguments
 ENTRYPOINT ["/usr/local/bin/rill"]
