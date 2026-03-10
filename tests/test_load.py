@@ -1,7 +1,6 @@
 """Tests for load module - simplified for dlt source."""
 
 import pytest
-
 from gaming_pipeline.load.pipeline import GamingPipeline
 
 
@@ -12,7 +11,7 @@ def mock_settings(monkeypatch):
 
     mock_db_config = DatabaseConfig(
         path=":memory:",
-        connection_uri="duckdb:///:memory:",
+        connection_string="duckdb:///:memory:",
     )
     mock_api_config = APIConfig()
     mock_settings = Settings(database=mock_db_config, api=mock_api_config)

@@ -1,16 +1,19 @@
-import asyncio
-import sys
-import warnings
-from pathlib import Path
+import asyncio  # noqa: E402
+import sys  # noqa: E402
+import warnings  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 # Suppress non-critical warnings
-warnings.filterwarnings("ignore", message="Config key.*is set in model_config but will be ignored")
-warnings.filterwarnings("ignore", message="urllib3.*or chardet.*doesn't match a supported version")
+warnings.filterwarnings(  # noqa: E402
+    "ignore", message="Config key.*is set in model_config but will be ignored"
+)
+warnings.filterwarnings(  # noqa: E402
+    "ignore", message="urllib3.*or chardet.*doesn't match a supported version"
+)
 
-import click
-
-from gaming_pipeline.logging_config import setup_logging
-from gaming_pipeline.orchestrate.flows import (
+import click  # noqa: E402
+from gaming_pipeline.logging_config import setup_logging  # noqa: E402
+from gaming_pipeline.orchestrate.flows import (  # noqa: E402
     daily_pipeline_flow,
     full_load_pipeline_flow,
 )
@@ -169,9 +172,8 @@ def status(ctx):
                     click.echo(f"  ✗ Unknown table: {table}", err=True)
                     continue
 
-                count = con.execute(
-                    f"SELECT COUNT(*) FROM {schema}.{table}"
-                ).fetchone()[0]
+                count = con.execute(f"SELECT COUNT(*) FROM {schema}.{table}").fetchone()  # noqa: S608
+                count = count[0] if count else 0
                 click.echo(f"    • {table}: {count:,} rows")
 
         con.close()
