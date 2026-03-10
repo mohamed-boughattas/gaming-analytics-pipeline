@@ -3,9 +3,8 @@ dialect = duckdb
 max_line_length = 88
 exclude_rules = RF01, RF02, RF03, RF04, RF05, RF06
 
-# SQLMesh MODEL blocks use non-standard syntax - exclude transform and test directories
-[sqlfluff:exclude]
-paths = sqlmesh
+# Disable template parsing since SQLMesh uses custom syntax
+templater = raw
 
 [sqlfluff:rules]
 capitalisation = lower
