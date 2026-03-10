@@ -1,4 +1,4 @@
-.PHONY: help install test lint format clean docker-up docker-down demo run marimo evidence rill db-reset sqlmesh-plan sqlmesh-apply sqlmesh-test version
+.PHONY: help install test lint format clean docker-up docker-down demo run marimo rill db-reset sqlmesh-plan sqlmesh-apply sqlmesh-test version
 
 # Default target
 help:
@@ -21,7 +21,6 @@ help:
 	@echo ""
 	@echo "Dashboards:"
 	@echo "  make marimo            - Start Marimo dashboard locally"
-	@echo "  make evidence          - Start Evidence dashboard locally"
 	@echo "  make rill              - Start Rill dashboard locally"
 	@echo ""
 	@echo "Docker:"
@@ -73,10 +72,6 @@ sqlmesh-test:
 marimo:
 	uv run marimo edit marimo/gaming_analytics.py --headless --host 0.0.0.0 --port 2718 --no-token
 
-evidence:
-	@echo "Starting Evidence dashboard..."
-	@cd evidence && npm run dev
-
 rill:
 	@echo "Starting Rill dashboard..."
 	@echo "Note: Install Rill CLI first with: curl -s https://cdn.rilldata.com/install.sh | bash"
@@ -91,7 +86,7 @@ docker-down:
 
 # Database
 db-reset:
-	@echo "⚠️  This will delete duckdb database""
+	@echo "⚠️  This will delete duckdb database"
 	@read -p ""
 	@rm -f data/*.duckdb data/*.db
 	@echo "Database reset complete."

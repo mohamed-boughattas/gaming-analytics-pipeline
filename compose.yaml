@@ -42,26 +42,6 @@ services:
       retries: 3
       start_period: 5s
 
-  evidence-dashboard:
-    build:
-      context: .
-      dockerfile: Dockerfile.evidence
-    container_name: gaming_analytics_evidence
-    volumes:
-      - ./evidence/pages:/app/pages
-      - ./evidence/sources:/app/sources
-      - ./evidence/.evidence:/app/.evidence
-      - ./data:/app/data
-    ports:
-      - "3000:3000"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
   rill-dashboard:
     build:
       context: .
@@ -79,6 +59,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-volumes:
-  evidence_node_modules:
