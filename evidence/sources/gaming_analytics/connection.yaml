@@ -1,4 +1,0 @@
-name: gaming_analytics
-type: duckdb
-options:
-  filename: ../../../data/gaming_analytics.duckdb
