@@ -1,6 +1,7 @@
 """Tests for load module - simplified for dlt source."""
 
 import pytest
+
 from gaming_pipeline.load.pipeline import GamingPipeline
 
 
