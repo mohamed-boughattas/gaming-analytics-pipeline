@@ -1,23 +1,23 @@
 # Gaming Analytics Pipeline
 
-[![CI/CD](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/mohamed-boughattas/gaming-analytics-pipeline/branch/main/graph/badge.svg)](https://codecov.io/gh/mohamed-boughattas/gaming-analytics-pipeline)
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120)
+[![CI/CD](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml/badge.svg?logo=githubactions)](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/mohamed-boughattas/gaming-analytics-pipeline/branch/main/graph/badge.svg?logo=codecov)](https://codecov.io/gh/mohamed-boughattas/gaming-analytics-pipeline)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg?logo=python)](https://www.python.org/downloads/release/python-3120)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg)](https://github.com/astral-sh/ruff)
-[![SQL Linting: sqlfluff](https://img.shields.io/badge/SQL%20linting-sqlfluff-blue)](https://sqlfluff.com/)
-[![Type checking: ty](https://img.shields.io/badge/type%20checking-ty-blue.svg)](https://github.com/astral-sh/ty)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg?logo=github)](https://github.com/astral-sh/ruff)
+[![SQL Linting: sqlfluff](https://img.shields.io/badge/SQL%20linting-sqlfluff-blue?logo=github)](https://sqlfluff.com/)
+[![Type checking: ty](https://img.shields.io/badge/type%20checking-ty-blue.svg?logo=github)](https://github.com/astral-sh/ty)
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![Security: Ruff S](https://img.shields.io/badge/Security-Ruff%20S-blue)](https://github.com/astral-sh/ruff)
-[![Security: detect-secrets](https://img.shields.io/badge/Security-detect--secrets-green)](https://github.com/Yelp/detect-secrets)
-[![dlt](https://img.shields.io/badge/dlt-data%20loading-blue)](https://dlthub.com/)
-[![Prefect](https://img.shields.io/badge/Prefect-3.x-orange)](https://prefect.io/)
-[![Soda](https://img.shields.io/badge/Soda%20Quality-green)](https://soda.io/)
-[![SQLMesh](https://img.shields.io/badge/SQLMesh-transform-purple)](https://sqlmesh.com/)
-[![Marimo](https://img.shields.io/badge/Marimo-dashboard-teal)](https://marimo.io/)
-[![Evidence](https://img.shields.io/badge/Evidence-SQL%20dashboard-blue)](https://evidence.dev/)
-[![DuckDB](https://img.shields.io/badge/DuckDB-database-yellow)](https://duckdb.org/)
-[![Docker](https://img.shields.io/badge/Docker-containerized-blue)](https://www.docker.com/)
+[![Security: Ruff S](https://img.shields.io/badge/Security-Ruff%20S-blue?logo=github)](https://github.com/astral-sh/ruff)
+[![Security: detect-secrets](https://img.shields.io/badge/Security-detect--secrets-green?logo=github)](https://github.com/Yelp/detect-secrets)
+[![dlt](https://img.shields.io/badge/dlt-data%20loading-blue?logo=github)](https://dlthub.com/)
+[![Prefect](https://img.shields.io/badge/Prefect-3.x-orange?logo=prefect)](https://prefect.io/)
+[![Soda](https://img.shields.io/badge/Soda%20Quality-green?logo=github)](https://soda.io/)
+[![SQLMesh](https://img.shields.io/badge/SQLMesh-transform-purple?logo=github)](https://sqlmesh.com/)
+[![Marimo](https://img.shields.io/badge/Marimo-dashboard-teal?logo=github)](https://marimo.io/)
+[![Rill](https://img.shields.io/badge/Rill-BI%20as%20code-purple?logo=github)](https://rilldata.com/)
+[![DuckDB](https://img.shields.io/badge/DuckDB-database-yellow?logo=duckdb)](https://duckdb.org/)
+[![Docker](https://img.shields.io/badge/Docker-containerized-blue?logo=docker)](https://www.docker.com/)
 
 A modern data engineering pipeline for collecting, processing, and analyzing gaming data from the RAWG API.
 
@@ -29,7 +29,7 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 - **Data Orchestration**: Manage workflows with Prefect 3.x
 - **Data Quality**: Validate data with Soda Core + SQLMesh tests
 - **Data Transformation**: Transform data with SQLMesh
-- **Data Visualization**: Present insights with Marimo and Evidence dashboards
+- **Data Visualization**: Present insights with Marimo and Rill dashboards
 
 ## 🏗️ Architecture
 
@@ -57,7 +57,7 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 └────────┘  └─────────┘  └───────────┘
                               │
                          ┌────▼────┐
-                         │Evidence  │
+                         │Rill      │
                          │Dashboard │
                          └──────────┘
 ```
@@ -74,11 +74,11 @@ For detailed documentation of data flow and transformations, see [docs/data-flow
 
 Reactive notebook-style dashboard for interactive data exploration
 
-### Evidence Dashboard
+### Rill Dashboard
 
-![Evidence Dashboard](docs/images/evidence.png)
+![Rill Dashboard](docs/images/rill.png)
 
-SQL-native dashboard for production-ready analytics
+BI-as-code dashboard for production-ready analytics
 
 > **Note**: Replace placeholder screenshots above with actual screenshots of your dashboards.
 
@@ -147,7 +147,7 @@ All services can run in Docker containers. The entire stack is containerized:
 3. **Access services**:
    - **Prefect UI**: <http://localhost:4200>
    - **Marimo Dashboard**: <http://localhost:2718>
-   - **Evidence Dashboard**: <http://localhost:3000>
+   - **Rill Dashboard**: <http://localhost:9009>
 
 4. **View logs**:
 
@@ -217,20 +217,18 @@ gaming-analytics-pipeline/
 │   │   └── test_engagement_score_positive.sql
 │   └── conftest.py                # Pytest fixtures
 │
-├── evidence/                      # Evidence SQL-native dashboard
-│   ├── package.json               # Node.js dependencies
-│   ├── evidence.config.yaml        # Evidence configuration
-│   ├── sources/                   # Data source connections
-│   │   └── gaming_analytics/      # DuckDB connection
-│   │       ├── connection.yaml
-│   │       └── *.sql              # SQL queries
-│   └── pages/                     # Dashboard pages
-│       ├── index.md               # Overview with KPIs
-│       ├── games.md               # Game analytics
-│       └── genres.md              # Genre analytics
-│
 ├── marimo/                     # Marimo reactive dashboard
 │   └── gaming_analytics.py        # Interactive visualizations
+│
+├── rill/                       # Rill BI-as-code dashboard
+│   ├── rill.yaml                  # Rill configuration
+│   ├── connectors/                # Data connectors
+│   ├── sources/                   # Data sources
+│   └── dashboards/                # Dashboard definitions
+│   ├── gaming_overview.yaml
+│   ├── games_analytics.yaml
+│   ├── genre_performance.yaml
+│   └── platform_analytics.yaml
 │
 ├── docs/                          # Documentation
 │   ├── adr/                       # Architecture Decision Records
@@ -261,7 +259,7 @@ gaming-analytics-pipeline/
 ├── compose.yaml                   # Docker Compose (3 services)
 ├── Dockerfile                     # Prefect pipeline container
 ├── Dockerfile.marimo              # Marimo dashboard container
-├── Dockerfile.evidence            # Evidence dashboard container
+├── Dockerfile.rill                # Rill dashboard container
 ├── pyproject.toml                 # Project dependencies & tool config
 ├── uv.lock                        # Dependency lock file
 ├── Makefile                       # Development commands
@@ -330,7 +328,7 @@ The pipeline runs in the following order:
 2. **Load**: Store data in DuckDB using dlt
 3. **Transform**: Apply SQLMesh transformations
 4. **Quality**: Validate data with Soda Core + SQLMesh tests
-5. **Visualize**: View insights in Marimo or Evidence dashboards
+5. **Visualize**: View insights in Marimo or Rill dashboards
 
 ## 📈 Monitoring
 
@@ -370,21 +368,21 @@ marimo edit marimo/gaming_analytics.py --headless --host 0.0.0.0 --port 2718 --n
 
 Access at <http://localhost:2718>
 
-### Evidence Dashboard Overview
+### Rill Dashboard Overview
 
-SQL-native analytics dashboard:
+BI-as-code analytics dashboard:
 
 ```bash
-cd evidence && npm install && npm run dev
+rill start ./rill --port 9009
 ```
 
 Or use Makefile:
 
 ```bash
-make evidence
+make rill
 ```
 
-Access at <http://localhost:3000>
+Access at <http://localhost:9009>
 
 ## 🔒 Security
 
@@ -512,7 +510,7 @@ This project is licensed under MIT License.
 - [Soda Core](https://www.soda.io/) for data quality
 - [SQLMesh](https://sqlmesh.com/) for transformations
 - [Marimo](https://marimo.io/) for visualization
-- [Evidence](https://evidence.dev/) for SQL dashboards
+- [Rill](https://rilldata.com/) for BI-as-code dashboards
 
 ## 📞 Support
 
