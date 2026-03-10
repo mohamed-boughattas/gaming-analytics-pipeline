@@ -5,7 +5,8 @@
 -- The MODEL block is SQLMesh-specific and is validated by SQLMesh itself.
 -- IDE SQL linters may show warnings about this syntax - this is expected.
 -- ============================================================================
-MODEL (
+
+MODEL ( -- noqa: PRS
     name staging.stg_genres,
     dialect duckdb,
     kind FULL,
@@ -18,11 +19,11 @@ MODEL (
 SELECT
     -- Primary key
     TRY_CAST(id AS INTEGER) AS id,
-    
+
     -- Basic info
     name,
     slug,
-    
+
     -- Visual assets
     image_background,
 
