@@ -148,3 +148,6 @@ soda_*.log
 
 # Detect-secrets
 .secrets.baseline
+
+# Rill
+rill/tmp/
