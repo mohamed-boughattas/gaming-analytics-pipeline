@@ -69,6 +69,7 @@ select = [
     "S311",
     "S110",
 ] # Allow assert, random, and try-except-pass in tests
+"src/gaming_pipeline/config/__init__.py" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
