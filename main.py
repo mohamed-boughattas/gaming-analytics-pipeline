@@ -1,6 +1,5 @@
 """CLI for Gaming Analytics Pipeline."""
 
-import asyncio
 import sys
 import warnings
 from pathlib import Path
@@ -64,9 +63,7 @@ def run(ctx: click.Context, page_size: int, max_pages: int, dry_run: bool) -> No
         f"Starting daily pipeline (page_size={page_size}, max_pages={max_pages})..."
     )
     try:
-        result = asyncio.run(
-            daily_pipeline_flow(page_size=page_size, max_pages=max_pages)
-        )
+        result = daily_pipeline_flow(page_size=page_size, max_pages=max_pages)
         click.echo("Daily pipeline completed successfully!")
         if result:
             click.echo(f"  Games loaded: {result.get('total_games', 'N/A')}")
@@ -96,7 +93,7 @@ def full_load(ctx: click.Context, dry_run: bool) -> None:
     click.confirm("Do you want to continue?", abort=True)
 
     try:
-        result = asyncio.run(full_load_pipeline_flow())
+        result = full_load_pipeline_flow()
         click.echo("Full load completed successfully!")
         if result and "rawg" in result:
             rawg = result["rawg"]

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
     description="Daily gaming analytics data pipeline",
     log_prints=True,
 )
-async def daily_pipeline_flow(
+def daily_pipeline_flow(
     page_size: int = 50, max_pages: int = 10, updated_after_days: int = 1
 ) -> dict[str, Any]:
     """Daily pipeline flow for gaming analytics."""
@@ -34,17 +34,17 @@ async def daily_pipeline_flow(
     logger.info("Starting daily gaming analytics pipeline")
 
     # Step 1: Run full pipeline (extract + load via DLT)
-    result = await run_full_pipeline_task(
+    result = run_full_pipeline_task(
         page_size=page_size,
         max_pages=max_pages,
         updated_after_days=updated_after_days,
     )
 
     # Step 2: Run SQLMesh transformations
-    sqlmesh_result = await run_sqlmesh_task()
+    sqlmesh_result = run_sqlmesh_task()
 
     # Step 3: Run Soda quality checks
-    soda_result = await run_soda_scan_task(checks_layer="marts")
+    soda_result = run_soda_scan_task(checks_layer="marts")
 
     # Get schema and load info (sync tasks - no await needed in Prefect)
     schema = get_pipeline_schema_task()
@@ -71,7 +71,7 @@ async def daily_pipeline_flow(
     description="Full load gaming analytics pipeline",
     log_prints=True,
 )
-async def full_load_pipeline_flow(
+def full_load_pipeline_flow(
     page_size: int = 100, max_pages: int = 50
 ) -> dict[str, Any]:
     """Full load pipeline flow for gaming analytics."""
@@ -79,7 +79,7 @@ async def full_load_pipeline_flow(
     logger.info("Starting full load gaming analytics pipeline")
 
     # Step 1: Run full pipeline with larger batch sizes
-    result = await run_full_pipeline_task(
+    result = run_full_pipeline_task(
         page_size=page_size,
         max_pages=max_pages,
         # Full year of data
@@ -87,10 +87,10 @@ async def full_load_pipeline_flow(
     )
 
     # Step 2: Run SQLMesh transformations
-    sqlmesh_result = await run_sqlmesh_task()
+    sqlmesh_result = run_sqlmesh_task()
 
     # Step 3: Run Soda quality checks
-    soda_result = await run_soda_scan_task(checks_layer="marts")
+    soda_result = run_soda_scan_task(checks_layer="marts")
 
     # Get schema and load info (sync tasks - no await needed in Prefect)
     schema = get_pipeline_schema_task()
@@ -117,14 +117,14 @@ async def full_load_pipeline_flow(
     description="Extract only flow for gaming analytics",
     log_prints=True,
 )
-async def extract_only_flow() -> dict[str, Any]:
+def extract_only_flow() -> dict[str, Any]:
     """Extract only flow for gaming analytics."""
     logger = get_run_logger()
     logger.info("Starting extract-only gaming analytics pipeline")
 
     # Extract genres and platforms
-    genres = await extract_rawg_genres_task()
-    platforms = await extract_rawg_platforms_task()
+    genres = extract_rawg_genres_task()
+    platforms = extract_rawg_platforms_task()
 
     result = {
         "genres_extracted": len(genres),
@@ -141,7 +141,7 @@ async def extract_only_flow() -> dict[str, Any]:
     description="Load only flow for gaming analytics",
     log_prints=True,
 )
-async def load_only_flow(
+def load_only_flow(
     page_size: int = 50, max_pages: int = 10, updated_after_days: int = 7
 ) -> dict[str, Any]:
     """Load only flow for gaming analytics."""
@@ -152,7 +152,7 @@ async def load_only_flow(
     updated_after = pendulum_now().subtract(days=updated_after_days)
 
     # Load RAWG data
-    rawg_result = await load_rawg_data_task(
+    rawg_result = load_rawg_data_task(
         page_size=page_size,
         max_pages=max_pages,
         updated_after=updated_after,
@@ -174,21 +174,21 @@ async def load_only_flow(
 # For production deployment, see Prefect documentation for deployment commands.
 
 
-async def run_daily_pipeline() -> dict[str, Any]:
+def run_daily_pipeline() -> dict[str, Any]:
     """Run daily pipeline."""
-    return await daily_pipeline_flow()
+    return daily_pipeline_flow()
 
 
-async def run_full_load_pipeline() -> dict[str, Any]:
+def run_full_load_pipeline() -> dict[str, Any]:
     """Run full load pipeline."""
-    return await full_load_pipeline_flow()
+    return full_load_pipeline_flow()
 
 
-async def run_extract_only_pipeline() -> dict[str, Any]:
+def run_extract_only_pipeline() -> dict[str, Any]:
     """Run extract-only pipeline."""
-    return await extract_only_flow()
+    return extract_only_flow()
 
 
-async def run_load_only_pipeline() -> dict[str, Any]:
+def run_load_only_pipeline() -> dict[str, Any]:
     """Run load-only pipeline."""
-    return await load_only_flow()
+    return load_only_flow()

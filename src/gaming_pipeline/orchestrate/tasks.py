@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
     retries=3,
     retry_delay_seconds=30,
 )
-async def extract_rawg_genres_task() -> list[dict[str, Any]]:
+def extract_rawg_genres_task() -> list[dict[str, Any]]:
     """Extract genres from RAWG API using full pipeline load."""
     logger.info("Starting RAWG genres extraction")
     pipeline = GamingPipeline()
@@ -47,7 +47,7 @@ async def extract_rawg_genres_task() -> list[dict[str, Any]]:
     retries=3,
     retry_delay_seconds=30,
 )
-async def extract_rawg_platforms_task() -> list[dict[str, Any]]:
+def extract_rawg_platforms_task() -> list[dict[str, Any]]:
     """Extract platforms from RAWG API using full pipeline load."""
     logger.info("Starting RAWG platforms extraction")
     pipeline = GamingPipeline()
@@ -73,7 +73,7 @@ async def extract_rawg_platforms_task() -> list[dict[str, Any]]:
     retries=2,
     retry_delay_seconds=60,
 )
-async def load_rawg_data_task(
+def load_rawg_data_task(
     page_size: int = 20,
     max_pages: int = 10,
     updated_after: "pendulum.DateTime | None" = None,
@@ -112,7 +112,7 @@ async def load_rawg_data_task(
     retries=1,
     retry_delay_seconds=120,
 )
-async def run_full_pipeline_task(
+def run_full_pipeline_task(
     page_size: int = 50, max_pages: int = 10, updated_after_days: int = 30
 ) -> dict[str, Any]:
     """Run complete gaming analytics pipeline."""
@@ -198,7 +198,7 @@ def refresh_schema_task() -> None:
     retries=2,
     retry_delay_seconds=60,
 )
-async def run_sqlmesh_task() -> dict[str, Any]:
+def run_sqlmesh_task() -> dict[str, Any]:
     """Run SQLMesh transformations."""
     logger.info("Starting SQLMesh transformations")
 
@@ -232,7 +232,7 @@ async def run_sqlmesh_task() -> dict[str, Any]:
     retries=1,
     retry_delay_seconds=30,
 )
-async def run_soda_scan_task(
+def run_soda_scan_task(
     checks_layer: str = "marts",
 ) -> dict[str, Any]:
     """Run Soda quality checks using v4 contracts."""
