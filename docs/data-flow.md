@@ -106,11 +106,10 @@ Business-ready data with aggregations and derived metrics:
 
 ### 5. Visualization Layer
 
-**Tools**: Marimo (reactive notebooks) and Evidence (SQL-native)
+**Tool**: Marimo (reactive notebooks)
 
 - **Marimo**: Interactive exploration with Python cells
-- **Evidence**: Static dashboards with embedded SQL queries
-- Both connect to the same DuckDB database
+- Connects to the DuckDB database in read-only mode
 
 ## Data Flow Diagram (Detailed)
 
@@ -138,7 +137,6 @@ flowchart TD
 
     subgraph Visualization
         MARIMO[Marimo Dashboard<br/>marimo/]
-        EVID[Evidence Dashboard]
     end
 
     API --> DLT
@@ -146,13 +144,11 @@ flowchart TD
     RAWG --> STG
     STG --> MART
     MART --> MARIMO
-    MART --> EVID
 
     API -->|HTTPS/JSON| DLT
     DLT -->|DuckDB/JSON| RAWG
     STG -->|SQLMesh| MART
     MART -->|DuckDB| MARIMO
-    MART -->|DuckDB| EVID
 ```
 
 ## Key Transformations

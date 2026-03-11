@@ -12,7 +12,6 @@
 [![Soda](https://img.shields.io/badge/Soda%20Quality-green?logo=soda)](https://soda.io/)
 [![SQLMesh](https://img.shields.io/badge/SQLMesh-transform-purple?logo=sqlmesh)](https://sqlmesh.com/)
 [![Marimo](https://img.shields.io/badge/Marimo-dashboard-teal?logo=marimo)](https://marimo.io/)
-[![Rill](https://img.shields.io/badge/Rill-BI%20as%20code-purple?logo=rill)](https://rilldata.com/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-database-yellow?logo=duckdb&logoColor=black)](https://duckdb.org/)
 [![Docker](https://img.shields.io/badge/Docker-containerized-blue?logo=docker&logoColor=white)](https://www.docker.com/)
 
@@ -26,38 +25,38 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 - **Data Orchestration**: Manage workflows with Prefect 3.x
 - **Data Quality**: Validate data with Soda Core + SQLMesh tests
 - **Data Transformation**: Transform data with SQLMesh
-- **Data Visualization**: Present insights with Marimo and Rill dashboards
+ - **Data Visualization**: Present insights with Marimo dashboard
 
 ## 🏗️ Architecture
 
-```text
+ ```text
 ┌─────────────┐      ┌─────────────┐
 │   RAWG API  │      │  Sources    │
 └──────┬──────┘      └──────┬──────┘
-       │                    │
-       └─────────┬──────────┘
-                 │
-         ┌───────▼────────┐
-         │  dlt Ingestion │
-         └───────┬────────┘
-                 │
-         ┌───────▼────────┐
-         │  DuckDB/      │
-         │  MotherDuck   │
-         └───────┬────────┘
-                 │
-    ┌────────────┼────────────┐
-    │            │            │
-┌───▼────┐  ┌──▼────┐  ┌──▼────────┐
-│Prefect  │  │Soda    │  │Marimo     │
-│3.x     │  │Core    │  │Dashboard   │
-└────────┘  └─────────┘  └───────────┘
-                              │
-                         ┌────▼────┐
-                         │Rill      │
-                         │Dashboard │
-                         └──────────┘
-```
+        │                    │
+        └─────────┬──────────┘
+                  │
+          ┌───────▼────────┐
+          │  dlt Ingestion │
+          └───────┬────────┘
+                  │
+          ┌───────▼────────┐
+          │  DuckDB/      │
+          │  MotherDuck   │
+          └───────┬────────┘
+                  │
+     ┌────────────┼────────────┐
+     │            │            │
+ ┌───▼────┐  ┌──▼────┐
+ │Prefect  │  │Soda    │
+ │3.x     │  │Core    │
+ └────────┘  └─────────┘
+                               │
+                          ┌────▼────┐
+                          │Marimo     │
+                          │Dashboard   │
+                          └───────────┘
+ ```
 
 ## 📈 Data Lineage
 
@@ -65,17 +64,11 @@ For detailed documentation of data flow and transformations, see [docs/data-flow
 
 ## 📊 Dashboard Screenshots
 
-### Marimo Dashboard
+ ### Marimo Dashboard
 
 ![Marimo Dashboard](docs/images/dashboard.png)
 
 Reactive notebook-style dashboard for interactive data exploration
-
-### Rill Dashboard
-
-![Rill Dashboard](docs/images/rill.png)
-
-BI-as-code dashboard for production-ready analytics
 
 > **Note**: Replace placeholder screenshots above with actual screenshots of your dashboards.
 
@@ -141,10 +134,9 @@ All services can run in Docker containers. The entire stack is containerized:
    docker compose ps
    ```
 
-3. **Access services**:
-   - **Prefect UI**: <http://localhost:4200>
-   - **Marimo Dashboard**: <http://localhost:2718>
-   - **Rill Dashboard**: <http://localhost:9009>
+ 3. **Access services**:
+    - **Prefect UI**: <http://localhost:4200>
+    - **Marimo Dashboard**: <http://localhost:2718>
 
 4. **View logs**:
 
@@ -215,18 +207,8 @@ gaming-analytics-pipeline/
 │   └── conftest.py                # Pytest fixtures
 │
 ├── marimo/                     # Marimo reactive dashboard
-│   └── gaming_analytics.py        # Interactive visualizations
-│
-├── rill/                       # Rill BI-as-code dashboard
-│   ├── rill.yaml                  # Rill configuration
-│   ├── connectors/                # Data connectors
-│   ├── sources/                   # Data sources
-│   └── dashboards/                # Dashboard definitions
-│   ├── gaming_overview.yaml
-│   ├── games_analytics.yaml
-│   ├── genre_performance.yaml
-│   └── platform_analytics.yaml
-│
+ │   └── gaming_analytics.py        # Interactive visualizations
+ │
 ├── docs/                          # Documentation
 │   ├── adr/                       # Architecture Decision Records
 │   │   ├── 001-choose-duckdb-over-postgresql.md
@@ -255,8 +237,7 @@ gaming-analytics-pipeline/
 ├── main.py                        # CLI entry point (Click)
 ├── compose.yaml                   # Docker Compose (3 services)
 ├── Dockerfile                     # Prefect pipeline container
-├── Dockerfile.marimo              # Marimo dashboard container
-├── Dockerfile.rill                # Rill dashboard container
+ ├── Dockerfile.marimo              # Marimo dashboard container
 ├── pyproject.toml                 # Project dependencies & tool config
 ├── uv.lock                        # Dependency lock file
 ├── Makefile                       # Development commands
@@ -325,7 +306,7 @@ The pipeline runs in the following order:
 2. **Load**: Store data in DuckDB using dlt
 3. **Transform**: Apply SQLMesh transformations
 4. **Quality**: Validate data with Soda Core + SQLMesh tests
-5. **Visualize**: View insights in Marimo or Rill dashboards
+ 5. **Visualize**: View insights in Marimo dashboard
 
 ## 📈 Monitoring
 
@@ -365,22 +346,6 @@ marimo edit marimo/gaming_analytics.py --headless --host 0.0.0.0 --port 2718 --n
 
 Access at <http://localhost:2718>
 
-### Rill Dashboard Overview
-
-BI-as-code analytics dashboard:
-
-```bash
-rill start ./rill --port 9009
-```
-
-Or use Makefile:
-
-```bash
-make rill
-```
-
-Access at <http://localhost:9009>
-
 ## 🔒 Security
 
 This project uses automated security scanning to ensure code and dependency safety:
@@ -411,16 +376,16 @@ This project uses automated security scanning to ensure code and dependency safe
 
 ```bash
 # Run all security checks
-make security
+make lint-security
 
 # Run Ruff security rules
-make security
+uv run ruff check src/ tests/ --select S
 
 # Run uv audit (dependency scanner)
 uv audit --preview-features audit
 
-# Run gitleaks (secrets detection)
-uv run gitleaks detect --no-git
+# Run detect-secrets (secrets detection)
+uv run detect-secrets scan --baseline .secrets.baseline
 ```
 
 ### Security Reports
@@ -507,7 +472,7 @@ This project is licensed under MIT License.
 - [Soda Core](https://www.soda.io/) for data quality
 - [SQLMesh](https://sqlmesh.com/) for transformations
 - [Marimo](https://marimo.io/) for visualization
-- [Rill](https://rilldata.com/) for BI-as-code dashboards
+- [Marimo](https://marimo.io/) for interactive data exploration
 
 ## 📞 Support
 
