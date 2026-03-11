@@ -2,8 +2,51 @@
 
 from pathlib import Path
 
+from gaming_pipeline.transform.sqlmesh_runner import SQLMeshRunner
+
 # Base directory for SQLMesh models
 SQLMESH_BASE = Path("sqlmesh/models")
+
+
+def test_sqlmesh_runner_creation():
+    """Test SQLMeshRunner can be instantiated."""
+    runner = SQLMeshRunner()
+    assert runner is not None
+
+
+def test_sqlmesh_runner_has_models_path():
+    """Test SQLMeshRunner has models_path attribute."""
+    runner = SQLMeshRunner()
+    assert hasattr(runner, "models_path")
+    assert runner.models_path == Path("models")
+
+
+def test_sqlmesh_runner_has_sqlmesh_config():
+    """Test SQLMeshRunner has sqlmesh_config attribute."""
+    runner = SQLMeshRunner()
+    assert hasattr(runner, "sqlmesh_config")
+    assert runner.sqlmesh_config == Path("sqlmesh.yaml")
+
+
+def test_sqlmesh_runner_has_plan_method():
+    """Test SQLMeshRunner has plan method."""
+    runner = SQLMeshRunner()
+    assert hasattr(runner, "plan")
+    assert callable(runner.plan)
+
+
+def test_sqlmesh_runner_has_apply_method():
+    """Test SQLMeshRunner has apply method."""
+    runner = SQLMeshRunner()
+    assert hasattr(runner, "apply")
+    assert callable(runner.apply)
+
+
+def test_sqlmesh_runner_has_test_method():
+    """Test SQLMeshRunner has test method."""
+    runner = SQLMeshRunner()
+    assert hasattr(runner, "test")
+    assert callable(runner.test)
 
 
 def test_staging_tables_exist():

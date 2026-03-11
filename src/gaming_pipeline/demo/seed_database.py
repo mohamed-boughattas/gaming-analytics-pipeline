@@ -6,9 +6,12 @@ a RAWG API key.
 """
 
 import json
+import logging
 from pathlib import Path
 
 import duckdb
+
+logger = logging.getLogger(__name__)
 
 # Sample game data matching the Game model schema
 SAMPLE_GAMES = [
@@ -388,7 +391,7 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     # Connect to DuckDB
     con = duckdb.connect(str(db_file))
 
-    print("Creating tables...")
+    logger.info("Creating tables...")
 
     # Create schema if not exists
     con.execute("CREATE SCHEMA IF NOT EXISTS raw")
@@ -457,7 +460,7 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     con.execute("DELETE FROM raw.rawg_genres")
     con.execute("DELETE FROM raw.rawg_platforms")
 
-    print("Inserting sample data...")
+    logger.info("Inserting sample data...")
 
     # Insert games
     for game in SAMPLE_GAMES:
@@ -537,11 +540,10 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
 
     con.close()
 
-    print("\nSample data seeded successfully!")
-    print(f"  - {games_count} games")
-    print(f"  - {genres_count} genres")
-    print(f"  - {platforms_count} platforms")
-    print(f"\nDatabase location: {db_file.absolute()}")
+    logger.info(
+        f"Sample data seeded: {games_count} games, {genres_count} genres, "
+        f"{platforms_count} platforms"
+    )
 
     return {
         "games": games_count,

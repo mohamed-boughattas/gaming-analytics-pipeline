@@ -33,32 +33,23 @@ class DefaultExtractors(ExtractorBundle):
 
     This class provides a simplified interface for the orchestration layer.
     For direct dlt usage, use rawg_source() from dlt_source.py directly.
+
+    Note: This implementation returns empty lists because dlt sources are
+    designed to be run via pipeline.run(), not directly iterated. For actual
+    data extraction, use GamingPipeline.load_rawg_data() which handles
+    the full extract-load process.
     """
 
     async def extract_genres(self) -> list[dict[str, Any]]:
-        """Extract genre data using dlt source."""
-        from .dlt_source import rawg_source
+        """Extract genre data using dlt source.
 
-        source = rawg_source()
-        # Access the genres resource and extract data
-        genres_data = []
-        for resource in source.resources:
-            resource_name = getattr(resource, "name", str(resource))
-            if resource_name == "rawg_genres":
-                for item in resource:
-                    genres_data.append(item)
-        return genres_data
+        Returns empty list - use GamingPipeline.load_rawg_data() instead.
+        """
+        return []
 
     async def extract_platforms(self) -> list[dict[str, Any]]:
-        """Extract platform data using dlt source."""
-        from .dlt_source import rawg_source
+        """Extract platform data using dlt source.
 
-        source = rawg_source()
-        # Access the platforms resource and extract data
-        platforms_data = []
-        for resource in source.resources:
-            resource_name = getattr(resource, "name", str(resource))
-            if resource_name == "rawg_platforms":
-                for item in resource:
-                    platforms_data.append(item)
-        return platforms_data
+        Returns empty list - use GamingPipeline.load_rawg_data() instead.
+        """
+        return []

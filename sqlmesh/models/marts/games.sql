@@ -33,12 +33,12 @@ WITH raw_games AS (
         background_image,
         saturated_color,
         dominant_color,
-        -- Keep JSON arrays as-is for explosion in other models
+        -- JSON arrays - will be unnested in downstream models
         genres,
         platforms,
         stores
-FROM staging.stg_games
-WHERE id IS NOT NULL
+    FROM staging.stg_games
+    WHERE id IS NOT NULL
 ),
 
 enriched_games AS (
@@ -79,7 +79,6 @@ SELECT
     background_image,
     saturated_color,
     dominant_color,
-    genre,
     platforms,
     stores,
     rating_category,
@@ -87,4 +86,3 @@ SELECT
     release_month,
     engagement_score
 FROM enriched_games
-CROSS JOIN UNNEST(genres) AS t(genre)

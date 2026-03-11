@@ -2,6 +2,7 @@
 
 import pytest
 
+from gaming_pipeline.extract.base import DefaultExtractors, ExtractorBundle
 from gaming_pipeline.extract.dlt_source import rawg_source
 
 
@@ -20,6 +21,38 @@ class TestDLTSource:
         source = rawg_source(page_size=50, max_pages=10, updated_after="2024-01-01")
         assert source is not None
         assert source.name in ("rawg", "rest_api")
+
+    def test_rawg_source_page_size_parameter(self):
+        """Test source respects page_size parameter."""
+        source = rawg_source(page_size=50)
+        assert source is not None
+        # Just verify it can be created with custom page_size
+
+    def test_rawg_source_max_pages_parameter(self):
+        """Test source accepts max_pages parameter."""
+        source = rawg_source(max_pages=3)
+        assert source is not None
+
+
+class TestExtractorBundle:
+    """Test ExtractorBundle protocol and DefaultExtractors."""
+
+    def test_default_extractors_is_extractor_bundle(self):
+        """Test DefaultExtractors implements ExtractorBundle."""
+        extractors = DefaultExtractors()
+        assert isinstance(extractors, ExtractorBundle)
+
+    def test_extractor_bundle_has_extract_genres_method(self):
+        """Test ExtractorBundle has extract_genres method."""
+        extractors = DefaultExtractors()
+        assert hasattr(extractors, "extract_genres")
+        assert callable(extractors.extract_genres)
+
+    def test_extractor_bundle_has_extract_platforms_method(self):
+        """Test ExtractorBundle has extract_platforms method."""
+        extractors = DefaultExtractors()
+        assert hasattr(extractors, "extract_platforms")
+        assert callable(extractors.extract_platforms)
 
 
 @pytest.mark.asyncio

@@ -1,52 +1,49 @@
 """Tests for load module - simplified for dlt source."""
 
-import pytest
-
 from gaming_pipeline.load.pipeline import GamingPipeline
 
 
-@pytest.fixture
-def mock_settings(monkeypatch):
-    """Mock settings for testing."""
-    from gaming_pipeline.config.settings import APIConfig, DatabaseConfig, Settings
-
-    mock_db_config = DatabaseConfig(
-        path=":memory:",
-        connection_string="duckdb:///:memory:",
-    )
-    mock_api_config = APIConfig()
-    mock_settings = Settings(database=mock_db_config, api=mock_api_config)
-
-    # Directly set the test values
-    mock_db_config.path = ":memory:"
-    mock_api_config.api_key = "test_key"
-
-    yield mock_settings
-
-
-@pytest.mark.asyncio
 class TestGamingPipeline:
     """Test GamingPipeline class."""
 
-    async def test_pipeline_creation(self, mock_settings):
+    def test_pipeline_creation(self):
         """Test pipeline can be created."""
-        # Just test that we can create a pipeline without errors
         pipeline = GamingPipeline()
         assert pipeline is not None
         assert pipeline.dataset_name == "gaming_analytics"
 
-    async def test_get_load_info_when_empty(self, mock_settings):
-        """Test getting load info when no loads have happened."""
-        pipeline = GamingPipeline()
-        # This should not raise an exception even if no load has happened
-        info = pipeline.get_load_info()
-        # Should return empty dict or valid result
-        assert info is not None
+    def test_pipeline_custom_dataset_name(self):
+        """Test pipeline accepts custom dataset name."""
+        pipeline = GamingPipeline(dataset_name="custom_dataset")
+        assert pipeline.dataset_name == "custom_dataset"
 
-    async def test_get_schema_when_empty(self, mock_settings):
-        """Test getting schema when no loads have happened."""
+    def test_get_load_info_returns_dict(self):
+        """Test get_load_info returns a dict."""
         pipeline = GamingPipeline()
-        # This should not raise an exception even if no load has happened
+        info = pipeline.get_load_info()
+        assert isinstance(info, dict)
+
+    def test_get_schema_returns_dict(self):
+        """Test get_schema returns a dict."""
+        pipeline = GamingPipeline()
         schema = pipeline.get_schema()
-        # Should return empty dict or valid result
-        assert schema is not None
+        assert isinstance(schema, dict)
+
+    def test_refresh_schema_does_not_raise(self):
+        """Test refresh_schema handles gracefully."""
+        pipeline = GamingPipeline()
+        # Should not raise an exception
+        pipeline.refresh_schema()
+
+    def test_pipeline_has_pipeline_attribute(self):
+        """Test pipeline has internal pipeline object."""
+        pipeline = GamingPipeline()
+        assert hasattr(pipeline, "pipeline")
+        assert pipeline.pipeline is not None
+
+    def test_create_pipeline_instance_function(self):
+        """Test convenience function creates pipeline."""
+        from gaming_pipeline.load.pipeline import create_pipeline_instance
+
+        pipeline = create_pipeline_instance()
+        assert isinstance(pipeline, GamingPipeline)

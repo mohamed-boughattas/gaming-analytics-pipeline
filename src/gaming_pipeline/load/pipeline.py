@@ -1,7 +1,7 @@
 """dlt pipeline for gaming analytics data loading."""
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import dlt
 from dlt.common.destination import Destination
@@ -10,9 +10,6 @@ from pendulum import now as pendulum_now
 
 from gaming_pipeline.config import config
 from gaming_pipeline.extract.dlt_source import rawg_source
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -75,53 +72,90 @@ class GamingPipeline:
             else:
                 updated_after_str = updated_after
 
-        # Create the dlt source
-        source = rawg_source(
-            page_size=page_size,
-            max_pages=max_pages,
-            updated_after=updated_after_str,
+        try:
+            # Create the dlt source
+            source = rawg_source(
+                page_size=page_size,
+                max_pages=max_pages,
+                updated_after=updated_after_str,
+            )
+
+            # Run the pipeline with the source
+            load_info = self.pipeline.run(source)
+
+            # Extract statistics from load info
+            jobs = (
+                load_info.load_packages[0].jobs["completed_jobs"]
+                if load_info.load_packages
+                else []
+            )
+            stats = {
+                "total_games": 0,
+                "genres": 0,
+                "platforms": 0,
+            }
+            for job in jobs:
+                table_name = job.job_file_info.table_name
+                if "games" in table_name:
+                    stats["total_games"] += job.job_file_info.rows  # type: ignore[attr-defined]
+                elif "genres" in table_name:
+                    stats["genres"] = job.job_file_info.rows  # type: ignore[attr-defined]
+                elif "platforms" in table_name:
+                    stats["platforms"] = job.job_file_info.rows  # type: ignore[attr-defined]
+
+            logger.info(f"RAWG data load complete: {stats}")
+            return stats
+
+        except Exception as e:
+            logger.error(f"Failed to load RAWG data: {e}")
+            return {
+                "total_games": 0,
+                "genres": 0,
+                "platforms": 0,
+                "error": str(e),
+            }
+
+    async def run_full_load(
+        self,
+        page_size: int = 50,
+        max_pages: int = 10,
+        updated_after_days: int = 30,
+    ) -> dict[str, Any]:
+        """Run full data load for all sources.
+
+        Args:
+            page_size: Number of items per page (max 100).
+            max_pages: Maximum number of pages to fetch.
+            updated_after_days: Number of days to look back for incremental loading.
+
+        Returns:
+            Dictionary with load statistics and timestamp.
+        """
+        logger.info(
+            f"Starting full data load (page_size={page_size}, "
+            f"max_pages={max_pages}, updated_after_days={updated_after_days})"
         )
 
-        # Run the pipeline with the source
-        load_info = self.pipeline.run(source)
+        try:
+            # Load RAWG data
+            rawg_result = await self.load_rawg_data(
+                page_size=page_size,
+                max_pages=max_pages,
+                updated_after=pendulum_now().subtract(days=updated_after_days),
+            )
 
-        # Extract statistics from load info
-        jobs = (
-            load_info.load_packages[0].jobs["completed_jobs"]
-            if load_info.load_packages
-            else []
-        )
-        stats = {
-            "total_games": 0,
-            "genres": 0,
-            "platforms": 0,
-        }
-        for job in jobs:
-            if "games" in job.job_file_info.table_name:
-                stats["total_games"] += job.job_file_info.rows  # type: ignore[attr-defined]
-            elif "genres" in job.job_file_info.table_name:
-                stats["genres"] = job.job_file_info.rows  # type: ignore[attr-defined]
-            elif "platforms" in job.job_file_info.table_name:
-                stats["platforms"] = job.job_file_info.rows  # type: ignore[attr-defined]
+            return {
+                "rawg": rawg_result,
+                "timestamp": pendulum_now().isoformat(),
+            }
 
-        logger.info(f"RAWG data load complete: {stats}")
-        return stats
-
-    async def run_full_load(self) -> dict[str, Any]:
-        """Run full data load for all sources."""
-        logger.info("Starting full data load")
-
-        # Load RAWG data
-        rawg_result = await self.load_rawg_data(
-            page_size=50,  # Load more per page for initial load
-            max_pages=10,  # Limit for demo
-            updated_after=pendulum_now().subtract(days=30),  # Last 30 days
-        )
-
-        return {
-            "rawg": rawg_result,
-            "timestamp": pendulum_now().isoformat(),
-        }
+        except Exception as e:
+            logger.error(f"Full load failed: {e}")
+            return {
+                "rawg": {"error": str(e)},
+                "timestamp": pendulum_now().isoformat(),
+                "error": str(e),
+            }
 
     def get_load_info(self) -> Any:
         """Get information about last load."""

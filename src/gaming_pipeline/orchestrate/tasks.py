@@ -9,7 +9,6 @@ from prefect import task
 from prefect.artifacts import create_markdown_artifact
 
 from gaming_pipeline.config import settings
-from gaming_pipeline.extract import extract_rawg_genres, extract_rawg_platforms
 from gaming_pipeline.load.pipeline import GamingPipeline
 
 if TYPE_CHECKING:
@@ -25,19 +24,21 @@ logger = logging.getLogger(__name__)
     retry_delay_seconds=30,
 )
 async def extract_rawg_genres_task() -> list[dict[str, Any]]:
-    """Extract genres from RAWG API."""
+    """Extract genres from RAWG API using full pipeline load."""
     logger.info("Starting RAWG genres extraction")
-    genres = await extract_rawg_genres()
+    pipeline = GamingPipeline()
+    result = await pipeline.load_rawg_data(page_size=100, max_pages=1)
+    genres_count = result.get("genres", 0)
 
     # Create artifact with summary
     create_markdown_artifact(
         key="rawg-genres-summary",
-        markdown=f"## RAWG Genres Extraction\n\nExtracted {len(genres)} genres",
+        markdown=f"## RAWG Genres Extraction\n\nExtracted {genres_count} genres",
         description="Summary of RAWG genres extraction",
     )
 
-    logger.info(f"Successfully extracted {len(genres)} genres")
-    return genres
+    logger.info(f"Successfully extracted {genres_count} genres")
+    return [{"count": genres_count}]
 
 
 @task(
@@ -47,21 +48,23 @@ async def extract_rawg_genres_task() -> list[dict[str, Any]]:
     retry_delay_seconds=30,
 )
 async def extract_rawg_platforms_task() -> list[dict[str, Any]]:
-    """Extract platforms from RAWG API."""
+    """Extract platforms from RAWG API using full pipeline load."""
     logger.info("Starting RAWG platforms extraction")
-    platforms = await extract_rawg_platforms()
+    pipeline = GamingPipeline()
+    result = await pipeline.load_rawg_data(page_size=100, max_pages=1)
+    platforms_count = result.get("platforms", 0)
 
     # Create artifact with summary
     create_markdown_artifact(
         key="rawg-platforms-summary",
         markdown=(
-            f"## RAWG Platforms Extraction\n\nExtracted {len(platforms)} platforms"
+            f"## RAWG Platforms Extraction\n\nExtracted {platforms_count} platforms"
         ),
         description="Summary of RAWG platforms extraction",
     )
 
-    logger.info(f"Successfully extracted {len(platforms)} platforms")
-    return platforms
+    logger.info(f"Successfully extracted {platforms_count} platforms")
+    return [{"count": platforms_count}]
 
 
 @task(
