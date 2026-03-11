@@ -32,11 +32,22 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run Ruff (including security rules)
+      - name: Check code format
+        run: uv run ruff format --check src/ tests/
+
+      - name: Run Ruff linter
         run: uv run ruff check src/ tests/ --select E,F,W,I,B,C4,UP,SIM,S
 
-      - name: Run ty
+      - name: Run type checker
         run: uv run ty check src/
+
+      - name: Validate SQLMesh models
+        run: cd sqlmesh && uv run sqlmesh lint
+
+      - name: Lint GitHub Actions
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: '-glob "*.yml" -glob "*.yaml"'
 
   test:
     name: Run Tests
@@ -102,24 +113,32 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
+    needs: [lint]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Trivy
-        run: |
-            sudo apt-get update
-            sudo apt-get install -y wget apt-transport-https gnupg
-            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-            echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-            sudo apt-get update
-            sudo apt-get install -y trivy
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        run: uv sync
 
       - name: Run Trivy vulnerability scanner
-        run: |
-            trivy fs --format sarif --output trivy-results.sarif . --exit-code 0 --ignore-unfixed --severity CRITICAL,HIGH
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
@@ -127,20 +146,12 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run Ruff security rules
-        run: |
-          uv run ruff check src/ tests/ --select S --output-format=json > ruff-security-report.json || true
-          uv run ruff check src/ tests/ --select S || true
+        run: uv run ruff check src/ tests/ --select S
 
       - name: Run uv audit
-        run: uv audit --preview-features audit || true
+        run: uv audit --preview-features audit
 
       - name: Run detect-secrets
         run: |
-          uv run detect-secrets scan || true
-
-      - name: Upload Ruff security results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ruff-security-report
-          path: ruff-security-report.json
+          uv run pip install detect-secrets
+          uv run detect-secrets scan --baseline .secrets.baseline
