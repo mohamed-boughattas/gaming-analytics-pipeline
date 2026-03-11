@@ -41,6 +41,23 @@ docs/
 *.md
 !README.md
 
-# Node/Evidence
-evidence/node_modules
-evidence/.evidence
+# SQLMesh (generated at runtime)
+sqlmesh/logs/
+sqlmesh/.cache/
+
+# Marimo (generated at runtime)
+marimo/__marimo__/
+
+# Rill (generated at runtime)
+rill/tmp/
+
+# Logs
+logs/
+*.log
+
+# CI/CD
+.github/
+
+# Misc
+*.tmp
+*.temp

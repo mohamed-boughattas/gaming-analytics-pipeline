@@ -151,3 +151,12 @@ soda_*.log
 
 # Rill
 rill/tmp/
+rill.archive/
+Dockerfile.rill.archive
+
+# SQLMesh
+sqlmesh/logs/
+sqlmesh/.cache/
+
+# Marimo
+marimo/__marimo__/

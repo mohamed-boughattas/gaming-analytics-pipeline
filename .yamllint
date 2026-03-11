@@ -1,0 +1,14 @@
+# yamllint configuration
+# https://yamllint.readthedocs.io/en/stable/configuration.html
+
+extends: relaxed
+
+ignore: |
+  .venv/
+  .github/
+  sqlmesh/
+  data/
+  __pycache__/
+
+rules:
+  line-length: disable
