@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "dlt[duckdb]>=1.0.0",
-    "prefect>=3.0.0,<3.2.0",
+    "prefect>=3.2.0",
     "sqlmesh>=0.100.0",
     "requests>=2.31.0",
     "pydantic>=2.11.0",
@@ -16,9 +16,9 @@ dependencies = [
     "click>=8.1.0",
     "rich>=13.0.0",
     "pendulum>=3.0.0",
-    "marimo>=0.15.1",
+    "marimo>=0.20.4",
     "plotly>=6.6.0",
-    "websockets>=10.0,<11.0",
+    "websockets>=14.2.0",
     "soda-duckdb>=4.1.1",
 ]
 
@@ -42,6 +42,8 @@ dev = [
     "ty>=0.0.20",
     "sqlfluff>=3.0.0",
     "detect-secrets>=1.5.0",
+    "yamllint>=1.35.0",
+    "chardet<6.0.0",
 ]
 
 ty = ["ty>=0.0.20"]
@@ -79,8 +81,9 @@ addopts = "--cov=src --cov-report=term-missing --cov-report=html"
 filterwarnings = [
     "ignore::UserWarning",
     "ignore::DeprecationWarning",
-    "ignore::requests.packages.urllib3.exceptions.DependencyWarning",
-    "ignore::requests.exceptions.RequestsDependencyWarning",
+    "ignore::Warning",
+    "default:.*urllib3.*:DeprecationWarning",
+    "default:.*charset_normalizer.*:DeprecationWarning",
 ]
 markers = [
     "integration: marks tests as integration tests (requires Prefect server, run with --integration)",

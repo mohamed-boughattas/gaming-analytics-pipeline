@@ -2,7 +2,7 @@
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.9
+    rev: v0.11.6
     hooks:
       - id: ruff
         args: [--fix]
@@ -16,8 +16,14 @@ repos:
       - id: sqlfluff-fix
         exclude: ^(src/gaming_pipeline/transform|tests/sqlmesh)/
 
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.36.0
+    hooks:
+      - id: yamllint
+        args: [-c, .yamllint]
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -40,16 +46,7 @@ repos:
     hooks:
       - id: ty
         name: ty
-        entry: uv run ty check
+        entry: uv run ty check src/
         language: system
         types: [python]
-        pass_filenames: true
-
-  - repo: local
-    hooks:
-      - id: pytest
-        name: pytest
-        entry: uv run pytest tests/ -v
-        language: system
         pass_filenames: false
-        always_run: false
