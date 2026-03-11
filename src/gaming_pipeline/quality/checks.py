@@ -112,12 +112,18 @@ class SodaScanner:
 
     # Mapping of layer names to contract files
     # Raw layer: data ingested from external sources (RAWG API)
+    # Staging layer: intermediate transformations
     # Marts layer: transformed and enriched data for analytics
     CONTRACT_FILES = {
         "raw": [
             "rawg_games.yml",
             "rawg_genres.yml",
             "rawg_platforms.yml",
+        ],
+        "staging": [
+            "stg_games.yml",
+            "stg_genres.yml",
+            "stg_platforms.yml",
         ],
         "marts": [
             "games.yml",
@@ -239,12 +245,12 @@ class UnifiedDataQualityChecker:
         """Initialize the unified data quality checker.
 
         Args:
-            db_path: Path to DuckDB database (unused, kept for API compatibility)
+            db_path: Path to DuckDB database. If not provided, uses settings.
         """
-        self.db_path = db_path or settings.database.path
+        self.db_path: str = db_path or settings.database.path
         self.soda_scanner = SodaScanner()
         self.sqlmesh_dir = Path("sqlmesh")
-        logger.info("Initialized unified data quality checker")
+        logger.info(f"Initialized unified data quality checker with db: {self.db_path}")
 
     def run_sqlmesh_tests(self, sqlmesh_dir: Path | None = None) -> SQLMeshTestResult:
         """Run SQLMesh native tests.
@@ -269,7 +275,7 @@ class UnifiedDataQualityChecker:
 
         try:
             # sqlmesh is a known safe command from project dependencies
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: S603
                 ["sqlmesh", "test"],  # noqa: S607
                 capture_output=True,
                 text=True,

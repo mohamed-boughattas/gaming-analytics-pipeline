@@ -1,13 +1,10 @@
 """Prefect flows for gaming analytics pipeline."""
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from pendulum import now as pendulum_now
 from prefect import flow, get_run_logger
-
-if TYPE_CHECKING:
-    pass
 
 from gaming_pipeline.orchestrate.tasks import (
     extract_rawg_genres_task,
@@ -38,22 +35,22 @@ async def daily_pipeline_flow(
 
     # Step 1: Run full pipeline (extract + load via DLT)
     result = await run_full_pipeline_task(
-        page_size=page_size,  # type: ignore[invalid-argument-type]
-        max_pages=max_pages,  # type: ignore[invalid-argument-type]
-        updated_after_days=updated_after_days,  # type: ignore[invalid-argument-type]
+        page_size=page_size,
+        max_pages=max_pages,
+        updated_after_days=updated_after_days,
     )
 
     # Step 2: Run SQLMesh transformations
     sqlmesh_result = await run_sqlmesh_task()
 
     # Step 3: Run Soda quality checks
-    soda_result = await run_soda_scan_task(checks_layer="marts")  # type: ignore[invalid-argument-type]
+    soda_result = await run_soda_scan_task(checks_layer="marts")
 
-    # Get schema and load info
+    # Get schema and load info (sync tasks - no await needed in Prefect)
     schema = get_pipeline_schema_task()
     load_info = get_load_info_task()
 
-    # Refresh schema
+    # Refresh schema (sync task - no await needed in Prefect)
     refresh_schema_task()
 
     final_result = {
@@ -83,23 +80,23 @@ async def full_load_pipeline_flow(
 
     # Step 1: Run full pipeline with larger batch sizes
     result = await run_full_pipeline_task(
-        page_size=page_size,  # type: ignore[invalid-argument-type]
-        max_pages=max_pages,  # type: ignore[invalid-argument-type]
+        page_size=page_size,
+        max_pages=max_pages,
         # Full year of data
-        updated_after_days=365,  # type: ignore[invalid-argument-type]
+        updated_after_days=365,
     )
 
     # Step 2: Run SQLMesh transformations
     sqlmesh_result = await run_sqlmesh_task()
 
     # Step 3: Run Soda quality checks
-    soda_result = await run_soda_scan_task(checks_layer="marts")  # type: ignore[invalid-argument-type]
+    soda_result = await run_soda_scan_task(checks_layer="marts")
 
-    # Get schema and load info
+    # Get schema and load info (sync tasks - no await needed in Prefect)
     schema = get_pipeline_schema_task()
     load_info = get_load_info_task()
 
-    # Refresh schema
+    # Refresh schema (sync task - no await needed in Prefect)
     refresh_schema_task()
 
     final_result = {
@@ -156,9 +153,9 @@ async def load_only_flow(
 
     # Load RAWG data
     rawg_result = await load_rawg_data_task(
-        page_size=page_size,  # type: ignore[invalid-argument-type]
-        max_pages=max_pages,  # type: ignore[invalid-argument-type]
-        updated_after=updated_after,  # type: ignore[invalid-argument-type]
+        page_size=page_size,
+        max_pages=max_pages,
+        updated_after=updated_after,
     )
 
     result = {

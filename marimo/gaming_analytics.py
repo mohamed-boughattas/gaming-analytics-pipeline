@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.20.4"
+__generated_with = "0.15.1"
 app = marimo.App(width="full")
 
 
@@ -21,7 +21,7 @@ def _():
 
     from gaming_pipeline.config import settings
 
-    con = duckdb.connect(settings.database.path)
+    con = duckdb.connect(settings.database.path, read_only=True)
     return con, pd, px
 
 
@@ -80,98 +80,156 @@ def _(con, mo):
 
 
 @app.cell
-def _(games_df, mo, px):
-    def _():
-        # Games by rating visualization
-        fig = px.scatter(
-            games_df.head(50),
-            x="rating",
-            y="ratings_count",
-            size="metacritic",
-            color="rating_top",
-            hover_name="name",
-            title="Games by Rating vs Ratings Count",
-            labels={"rating": "Average Rating", "ratings_count": "Number of Ratings"},
-        )
-        fig.update_layout(height=500)
-        return mo.ui.plotly(fig)
+def _(games_df, mo):
+    # KPI Summary Cards
+    total_games = len(games_df)
+    avg_rating = games_df["rating"].mean()
+    avg_metacritic = games_df["metacritic"].mean()
 
-    _()
+    kpi_row = mo.hstack(
+        [
+            mo.stat(label="Total Games", value=f"{total_games:,}"),
+            mo.stat(label="Avg Rating", value=f"{avg_rating:.2f}"),
+            mo.stat(label="Avg Metacritic", value=f"{avg_metacritic:.1f}"),
+        ],
+        gap=2,
+    )
+    kpi_row  # noqa: B018
+    return
+
+
+@app.cell
+def _(games_df, mo):
+    # Interactive filters
+    year_slider = mo.ui.slider(
+        games_df["release_year"].min(),
+        games_df["release_year"].max(),
+        value=games_df["release_year"].max(),
+        label="Filter by Year",
+    )
+
+    min_rating = mo.ui.number(value=0, start=0, stop=10, step=0.1, label="Min Rating")
+
+    mo.md(f"**Filters:** {year_slider} | {min_rating}")
+    return min_rating, year_slider
+
+
+@app.cell
+def _(games_df, min_rating, mo, px, year_slider):
+    # Filtered data based on user input
+    filtered_games = games_df[
+        (games_df["release_year"] <= year_slider.value)
+        & (games_df["rating"] >= min_rating.value)
+    ]
+
+    # Games by rating visualization
+    fig = px.scatter(
+        filtered_games.head(100),
+        x="rating",
+        y="ratings_count",
+        size="metacritic",
+        color="rating_category",
+        hover_name="name",
+        title="Games by Rating vs Ratings Count (Filtered)",
+        labels={"rating": "Average Rating", "ratings_count": "Number of Ratings"},
+    )
+    fig.update_layout(height=500)
+    mo.ui.plotly(fig)
+    return (filtered_games,)
+
+
+@app.cell
+def _(filtered_games, mo, px):
+    # Rating distribution by category
+    rating_category_fig = px.histogram(
+        filtered_games,
+        x="rating_category",
+        title="Games by Rating Category",
+        labels={"rating_category": "Rating Category", "count": "Number of Games"},
+    )
+    rating_category_fig.update_layout(height=400)
+    mo.ui.plotly(rating_category_fig)
     return
 
 
 @app.cell
 def _(genres_df, mo, px):
-    def _():
-        # Top genres by games count
-        fig = px.bar(
-            genres_df.head(10),
-            x="name",
-            y="games_count",
-            title="Top 10 Genres by Games Count",
-            labels={"name": "Genre", "games_count": "Number of Games"},
-        )
-        fig.update_layout(height=400)
-        return mo.ui.plotly(fig)
-
-    _()
+    # Top genres by games count
+    genres_fig = px.bar(
+        genres_df.head(10),
+        x="name",
+        y="games_count",
+        color="avg_rating",
+        title="Top 10 Genres by Games Count",
+        labels={"name": "Genre", "games_count": "Number of Games"},
+        color_continuous_scale="Viridis",
+    )
+    genres_fig.update_layout(height=400)
+    mo.ui.plotly(genres_fig)
     return
 
 
 @app.cell
 def _(mo, platforms_df, px):
-    def _():
-        def _():
-            # Top platforms by games count
-            fig = px.bar(
-                platforms_df.head(10),
-                x="platform_name",
-                y="games_count",
-                title="Top 10 Platforms by Games Count",
-                labels={"platform_name": "Platform", "games_count": "Number of Games"},
-            )
-            fig.update_layout(height=400)
-            return mo.ui.plotly(fig)
-
-        return _()
-
-    _()
+    # Platforms by games count
+    platforms_fig = px.bar(
+        platforms_df.head(15),
+        x="platform_name",
+        y="games_count",
+        color="avg_rating",
+        title="Top Platforms by Games Count",
+        labels={"platform_name": "Platform", "games_count": "Number of Games"},
+        color_continuous_scale="Viridis",
+    )
+    platforms_fig.update_layout(height=400)
+    mo.ui.plotly(platforms_fig)
     return
 
 
 @app.cell
 def _(games_df, mo, px):
-    def _():
-        # Rating distribution
-        fig = px.histogram(
-            games_df,
-            x="rating",
-            nbins=20,
-            title="Distribution of Game Ratings",
-            labels={"rating": "Rating", "count": "Number of Games"},
-        )
-        fig.update_layout(height=400)
-        return mo.ui.plotly(fig)
-
-    _()
+    # Rating distribution histogram
+    rating_dist_fig = px.histogram(
+        games_df,
+        x="rating",
+        nbins=20,
+        title="Distribution of Game Ratings",
+        labels={"rating": "Rating", "count": "Number of Games"},
+    )
+    rating_dist_fig.update_layout(height=400)
+    mo.ui.plotly(rating_dist_fig)
     return
 
 
 @app.cell
 def _(games_df, mo, px):
-    def _():
-        # Metacritic vs Rating correlation
-        fig = px.scatter(
-            games_df,
-            x="metacritic",
-            y="rating",
-            title="Metacritic Score vs User Rating Correlation",
-            labels={"metacritic": "Metacritic Score", "rating": "User Rating"},
-        )
-        fig.update_layout(height=500)
-        return mo.ui.plotly(fig)
+    # Metacritic vs Rating correlation
+    metacritic_fig = px.scatter(
+        games_df,
+        x="metacritic",
+        y="rating",
+        color="rating_category",
+        title="Metacritic Score vs User Rating Correlation",
+        labels={"metacritic": "Metacritic Score", "rating": "User Rating"},
+    )
+    metacritic_fig.update_layout(height=500)
+    mo.ui.plotly(metacritic_fig)
+    return
 
-    _()
+
+@app.cell
+def _(games_df, mo, px):
+    # Games released over time (yearly trend)
+    yearly_games = games_df.groupby("release_year").size().reset_index(name="count")
+    yearly_fig = px.line(
+        yearly_games,
+        x="release_year",
+        y="count",
+        title="Games Released by Year",
+        labels={"release_year": "Year", "count": "Number of Games"},
+    )
+    yearly_fig.update_layout(height=400)
+    mo.ui.plotly(yearly_fig)
     return
 
 
@@ -189,6 +247,30 @@ def _(games_df, genres_df, mo, pd, platforms_df):
 
     summary_df = pd.DataFrame(list(summary_stats.items()), columns=["Metric", "Value"])
     mo.ui.table(summary_df)
+    return
+
+
+@app.cell
+def _(games_df, mo):
+    # Show raw table with all columns
+    mo.md("### Games Table (Raw Data)")
+    mo.ui.table(games_df)
+    return
+
+
+@app.cell
+def _(genres_df, mo):
+    # Show genres table
+    mo.md("### Genres Table")
+    mo.ui.table(genres_df)
+    return
+
+
+@app.cell
+def _(mo, platforms_df):
+    # Show platforms table
+    mo.md("### Platforms Table")
+    mo.ui.table(platforms_df)
     return
 
 

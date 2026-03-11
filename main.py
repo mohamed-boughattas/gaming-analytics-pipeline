@@ -1,21 +1,27 @@
-import asyncio  # noqa: E402
-import sys  # noqa: E402
-import warnings  # noqa: E402
-from pathlib import Path  # noqa: E402
+"""CLI for Gaming Analytics Pipeline."""
 
-# Suppress non-critical warnings
-warnings.filterwarnings(  # noqa: E402
-    "ignore", message="Config key.*is set in model_config but will be ignored"
-)
-warnings.filterwarnings(  # noqa: E402
-    "ignore", message="urllib3.*or chardet.*doesn't match a supported version"
-)
+import asyncio
+import sys
+import warnings
+from pathlib import Path
 
-import click  # noqa: E402
-from gaming_pipeline.logging_config import setup_logging  # noqa: E402
-from gaming_pipeline.orchestrate.flows import (  # noqa: E402
+import click
+
+from gaming_pipeline.config import config
+from gaming_pipeline.logging_config import setup_logging
+from gaming_pipeline.orchestrate.flows import (
     daily_pipeline_flow,
     full_load_pipeline_flow,
+)
+
+# Suppress non-critical warnings
+warnings.filterwarnings(
+    "ignore",
+    message="Config key.*is set in model_config but will be ignored",
+)
+warnings.filterwarnings(
+    "ignore",
+    message="urllib3.*or chardet.*doesn't match a supported version",
 )
 
 
@@ -26,7 +32,7 @@ from gaming_pipeline.orchestrate.flows import (  # noqa: E402
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
 )
 @click.pass_context
-def cli(ctx, log_level):
+def cli(ctx: click.Context, log_level: str) -> None:
     """Gaming Analytics Pipeline CLI
 
     A modern data engineering pipeline for collecting, processing,
@@ -42,7 +48,7 @@ def cli(ctx, log_level):
 @click.option("--max-pages", default=10, help="Maximum pages to fetch")
 @click.option("--dry-run", is_flag=True, help="Validate without executing")
 @click.pass_context
-def run(ctx, page_size: int, max_pages: int, dry_run: bool):
+def run(ctx: click.Context, page_size: int, max_pages: int, dry_run: bool) -> None:
     """Run the daily pipeline (incremental load)
 
     Fetches and processes new gaming data from the RAWG API.
@@ -51,7 +57,7 @@ def run(ctx, page_size: int, max_pages: int, dry_run: bool):
         click.echo("Dry run mode - validating configuration...")
         click.echo(f"  Page size: {page_size}")
         click.echo(f"  Max pages: {max_pages}")
-        click.echo("Configuration valid ✓")
+        click.echo("Configuration valid")
         return
 
     click.echo(
@@ -61,20 +67,20 @@ def run(ctx, page_size: int, max_pages: int, dry_run: bool):
         result = asyncio.run(
             daily_pipeline_flow(page_size=page_size, max_pages=max_pages)
         )
-        click.echo("✓ Daily pipeline completed successfully!")
+        click.echo("Daily pipeline completed successfully!")
         if result:
             click.echo(f"  Games loaded: {result.get('total_games', 'N/A')}")
             click.echo(f"  Genres loaded: {result.get('genres', 'N/A')}")
             click.echo(f"  Platforms loaded: {result.get('platforms', 'N/A')}")
     except Exception as e:
-        click.echo(f"✗ Pipeline failed: {e}", err=True)
+        click.echo(f"Pipeline failed: {e}", err=True)
         sys.exit(1)
 
 
 @cli.command()
 @click.option("--dry-run", is_flag=True, help="Validate without executing")
 @click.pass_context
-def full_load(ctx, dry_run: bool):
+def full_load(ctx: click.Context, dry_run: bool) -> None:
     """Run full historical load
 
     Fetches all available historical data from the RAWG API.
@@ -82,7 +88,7 @@ def full_load(ctx, dry_run: bool):
     """
     if dry_run:
         click.echo("Dry run mode - validating full load configuration...")
-        click.echo("Configuration valid ✓")
+        click.echo("Configuration valid")
         return
 
     click.echo("Starting full historical load...")
@@ -91,102 +97,69 @@ def full_load(ctx, dry_run: bool):
 
     try:
         result = asyncio.run(full_load_pipeline_flow())
-        click.echo("✓ Full load completed successfully!")
+        click.echo("Full load completed successfully!")
         if result and "rawg" in result:
             rawg = result["rawg"]
             click.echo(f"  Games loaded: {rawg.get('total_games', 'N/A')}")
             click.echo(f"  Genres loaded: {rawg.get('genres', 'N/A')}")
             click.echo(f"  Platforms loaded: {rawg.get('platforms', 'N/A')}")
     except Exception as e:
-        click.echo(f"✗ Full load failed: {e}", err=True)
+        click.echo(f"Full load failed: {e}", err=True)
         sys.exit(1)
 
 
 @cli.command()
 @click.pass_context
-def status(ctx):
+def status(ctx: click.Context) -> None:
     """Check pipeline status and database health"""
     import duckdb
 
-    db_path = Path("data/gaming_analytics.duckdb")
+    db_path = Path(config.database.path)
     if not db_path.exists():
-        click.echo("✗ Database not found. Run 'python main.py run' to initialize.")
+        click.echo("Database not found. Run 'python main.py run' to initialize.")
         sys.exit(1)
 
     try:
-        con = duckdb.connect(str(db_path))
+        with duckdb.connect(str(db_path)) as con:
+            tables = con.execute(
+                """
+                SELECT table_schema, table_name
+                FROM information_schema.tables
+                WHERE table_schema IN ('raw', 'staging', 'marts')
+                ORDER BY table_schema, table_name
+                """
+            ).fetchall()
 
-        # Check tables across all schemas
-        schemas = con.execute(
-            """
-            SELECT DISTINCT table_schema
-            FROM information_schema.tables
-            WHERE table_schema IN ('raw', 'staging', 'marts')
-            ORDER BY table_schema
-        """
-        ).fetchall()
+            click.echo("Pipeline Status:")
+            click.echo(f"  Database: {db_path}")
+            click.echo(f"  Tables: {len(tables)}")
 
-        tables = con.execute(
-            """
-            SELECT table_schema, table_name
-            FROM information_schema.tables
-            WHERE table_schema IN ('raw', 'staging', 'marts')
-            ORDER BY table_schema, table_name
-        """
-        ).fetchall()
+            if tables:
+                click.echo("\n  Tables:")
+                current_schema = None
+                for schema, table in tables:
+                    if schema != current_schema:
+                        if current_schema:
+                            click.echo(f"\n  {current_schema}:")
+                        click.echo(f"  {schema}:")
+                        current_schema = schema
 
-        click.echo("Pipeline Status:")
-        click.echo(f"  Database: {db_path}")
-        click.echo(f"  Schemas: {len(schemas)} ({', '.join([s[0] for s in schemas])})")
-        click.echo(f"  Tables: {len(tables)}")
+                    count = con.execute(
+                        f"SELECT COUNT(*) FROM {schema}.{table}"  # noqa: S608
+                    ).fetchone()
+                    count = count[0] if count else 0
+                    click.echo(f"    - {table}: {count:,} rows")
 
-        click.echo("Pipeline Status:")
-        click.echo(f"  Database: {db_path}")
-        click.echo(f"  Tables: {len(tables)}")
-
-        if tables:
-            click.echo("\n  Tables:")
-            current_schema = None
-            for schema, table in tables:
-                # Show schema grouping
-                if schema != current_schema:
-                    if current_schema:
-                        click.echo(f"\n  {current_schema}:")
-                    click.echo(f"  {schema}:")
-                    current_schema = schema
-
-                # Validate table name to prevent SQL injection
-                # Table names come from database schema query, but we whitelist-verify
-                allowed_tables = {
-                    "rawg_games",
-                    "rawg_genres",
-                    "rawg_platforms",
-                    "stg_games",
-                    "stg_genres",
-                    "stg_platforms",
-                    "games",
-                    "genres",
-                    "platforms",
-                }
-                if table not in allowed_tables:
-                    click.echo(f"  ✗ Unknown table: {table}", err=True)
-                    continue
-
-                count = con.execute(f"SELECT COUNT(*) FROM {schema}.{table}").fetchone()  # noqa: S608
-                count = count[0] if count else 0
-                click.echo(f"    • {table}: {count:,} rows")
-
-        con.close()
-        click.echo("\n✓ Pipeline healthy")
+        click.echo("\nPipeline healthy")
 
     except Exception as e:
-        click.echo(f"✗ Error checking status: {e}", err=True)
+        click.echo(f"Error checking status: {e}", err=True)
         sys.exit(1)
 
 
 @cli.command("seed")
 @click.pass_context
-def seed(ctx):
+def seed(ctx: click.Context) -> None:
     """Seed database with sample gaming data
 
     Creates mock data for demo purposes without requiring a RAWG API key.
@@ -197,17 +170,17 @@ def seed(ctx):
     click.echo("Seeding database with sample data...")
     try:
         result = seed_database()
-        click.echo("✓ Sample data seeded successfully!")
+        click.echo("Sample data seeded successfully!")
         click.echo(f"  - {result['games']} games")
         click.echo(f"  - {result['genres']} genres")
         click.echo(f"  - {result['platforms']} platforms")
     except Exception as e:
-        click.echo(f"✗ Seed failed: {e}", err=True)
+        click.echo(f"Seed failed: {e}", err=True)
         sys.exit(1)
 
 
 @cli.command()
-def version():
+def version() -> None:
     """Show version information"""
     from importlib.metadata import version
 
@@ -215,7 +188,6 @@ def version():
         pkg_version = version("gaming_analytics_pipeline")
         click.echo(f"Gaming Analytics Pipeline v{pkg_version}")
     except Exception:
-        # Fallback to hardcoded version if metadata is not available
         click.echo("Gaming Analytics Pipeline v0.1.0")
 
 
