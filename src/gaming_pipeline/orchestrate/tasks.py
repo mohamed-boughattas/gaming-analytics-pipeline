@@ -27,7 +27,7 @@ async def extract_rawg_genres_task() -> list[dict[str, Any]]:
     """Extract genres from RAWG API using full pipeline load."""
     logger.info("Starting RAWG genres extraction")
     pipeline = GamingPipeline()
-    result = await pipeline.load_rawg_data(page_size=100, max_pages=1)
+    result = pipeline.load_rawg_data(page_size=100, max_pages=1)
     genres_count = result.get("genres", 0)
 
     # Create artifact with summary
@@ -51,7 +51,7 @@ async def extract_rawg_platforms_task() -> list[dict[str, Any]]:
     """Extract platforms from RAWG API using full pipeline load."""
     logger.info("Starting RAWG platforms extraction")
     pipeline = GamingPipeline()
-    result = await pipeline.load_rawg_data(page_size=100, max_pages=1)
+    result = pipeline.load_rawg_data(page_size=100, max_pages=1)
     platforms_count = result.get("platforms", 0)
 
     # Create artifact with summary
@@ -82,7 +82,7 @@ async def load_rawg_data_task(
     logger.info("Starting RAWG data load")
 
     pipeline = GamingPipeline()
-    result = await pipeline.load_rawg_data(
+    result = pipeline.load_rawg_data(
         page_size=page_size, max_pages=max_pages, updated_after=updated_after
     )
 
@@ -119,7 +119,7 @@ async def run_full_pipeline_task(
     logger.info("Starting full pipeline execution")
 
     pipeline = GamingPipeline()
-    result = await pipeline.run_full_load()
+    result = pipeline.run_full_load()
 
     # Create comprehensive artifact
     rawg_result = result.get("rawg", {})

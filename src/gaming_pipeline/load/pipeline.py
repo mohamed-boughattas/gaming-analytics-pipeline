@@ -46,7 +46,7 @@ class GamingPipeline:
             dev_mode=config.is_production is False,
         )
 
-    async def load_rawg_data(
+    def load_rawg_data(
         self,
         page_size: int = 20,
         max_pages: int | None = None,
@@ -115,7 +115,7 @@ class GamingPipeline:
                 "error": str(e),
             }
 
-    async def run_full_load(
+    def run_full_load(
         self,
         page_size: int = 50,
         max_pages: int = 10,
@@ -138,7 +138,7 @@ class GamingPipeline:
 
         try:
             # Load RAWG data
-            rawg_result = await self.load_rawg_data(
+            rawg_result = self.load_rawg_data(
                 page_size=page_size,
                 max_pages=max_pages,
                 updated_after=pendulum_now().subtract(days=updated_after_days),
@@ -182,10 +182,10 @@ class GamingPipeline:
             logger.error(f"Failed to refresh schema: {e}")
 
 
-async def run_gaming_pipeline() -> dict[str, Any]:
+def run_gaming_pipeline() -> dict[str, Any]:
     """Convenience function to run full gaming pipeline."""
     pipeline = GamingPipeline()
-    return await pipeline.run_full_load()
+    return pipeline.run_full_load()
 
 
 def create_pipeline_instance() -> GamingPipeline:
