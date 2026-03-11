@@ -38,5 +38,8 @@ EXPOSE 4200
 
 ENV PYTHONPATH=/app/src
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:4200/api/health || exit 1
+
 # Default command
 CMD ["uv", "run", "python", "/app/main.py"]
