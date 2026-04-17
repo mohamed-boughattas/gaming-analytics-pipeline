@@ -7,13 +7,12 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg?logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
 [![SQL Linting: sqlfluff](https://img.shields.io/badge/SQL%20linting-sqlfluff-blue?logo=sql)](https://sqlfluff.com/)
 [![Type checking: ty](https://img.shields.io/badge/type%20checking-ty-blue?logo=python)](https://github.com/astral-sh/ty)
-[![Security: detect-secrets](https://img.shields.io/badge/Security-detect--secrets-green?logo=yelp)](https://github.com/Yelp/detect-secrets)
 [![dlt](https://img.shields.io/badge/dlt-data%20loading-blue?logo=dlt)](https://dlthub.com/)
 [![Soda](https://img.shields.io/badge/Soda%20Quality-green?logo=soda)](https://soda.io/)
 [![SQLMesh](https://img.shields.io/badge/SQLMesh-transform-purple?logo=sqlmesh)](https://sqlmesh.com/)
 [![Marimo](https://img.shields.io/badge/Marimo-dashboard-teal?logo=marimo)](https://marimo.io/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-database-yellow?logo=duckdb&logoColor=black)](https://duckdb.org/)
-[![Docker](https://img.shields.io/badge/Docker-containerized-blue?logo=docker&logoColor=white)](https://www.docker.com/)
+
 
 A modern data engineering pipeline for collecting, processing, and analyzing gaming data from the RAWG API.
 
@@ -22,55 +21,126 @@ A modern data engineering pipeline for collecting, processing, and analyzing gam
 This pipeline provides end-to-end data engineering capabilities for gaming analytics:
 
 - **Data Ingestion**: Extract data from RAWG API using dlt
-- **Data Orchestration**: Manage workflows with Prefect 3.x
+- **Data Orchestration**: Manage workflows with Prefect
 - **Data Quality**: Validate data with Soda Core + SQLMesh tests
 - **Data Transformation**: Transform data with SQLMesh
- - **Data Visualization**: Present insights with Marimo dashboard
+- **Data Visualization**: Present insights with Marimo and Evidence dashboards
 
 ## 🏗️ Architecture
 
- ```text
-┌─────────────┐      ┌─────────────┐
-│   RAWG API  │      │  Sources    │
-└──────┬──────┘      └──────┬──────┘
-        │                    │
-        └─────────┬──────────┘
-                  │
-          ┌───────▼────────┐
-          │  dlt Ingestion │
-          └───────┬────────┘
-                  │
-          ┌───────▼────────┐
-          │  DuckDB/      │
-          │  MotherDuck   │
-          └───────┬────────┘
-                  │
-     ┌────────────┼────────────┐
-     │            │            │
- ┌───▼────┐  ┌──▼────┐
- │Prefect  │  │Soda    │
- │3.x     │  │Core    │
- └────────┘  └─────────┘
-                               │
-                          ┌────▼────┐
-                          │Marimo     │
-                          │Dashboard   │
-                          └───────────┘
- ```
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Gaming Analytics Pipeline                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────┐                                                          │
+│  │   RAWG API   │ ◄── Source                                               │
+│  └──────┬───────┘                                                          │
+│         │                                                                   │
+│         ▼                                                                   │
+│  ┌──────────────┐     ┌──────────────┐                                    │
+│  │     dlt      │ ◄── │   Prefect     │ ◄── Orchestration                 │
+│  │  (Ingestion) │     │   (Tasks)     │                                    │
+│  │  Incremental │     └──────────────┘                                    │
+│  └──────┬───────┘                                                          │
+│         │                                                                   │
+│         ▼                                                                   │
+│  ┌──────────────────────────────────┐                                     │
+│  │         DuckDB                   │ ◄── Local DuckDB storage             │
+│  │   ┌───────┐  ┌───────┐         │                                     │
+│  │   │  raw  │─▶│ marts │         │                                     │
+│  │   └───────┘  └───────┘         │                                     │
+│  └──────────────┬──────────────────┘                                     │
+│                 │                                                           │
+│         ┌───────┴───────┐                                                  │
+│         │               │                                                  │
+│         ▼               ▼                                                  │
+│  ┌──────────────┐ ┌──────────────┐                                        │
+│  │   SQLMesh    │ │    Soda      │ ◄── Quality (Defense in Depth)        │
+│  │ (Transform)  │ │  (Checks)    │                                        │
+│  └──────────────┘ └──────────────┘                                        │
+│                 │                                                           │
+│         ┌───────┴───────┐                                                  │
+│         │               │                                                  │
+│         ▼               ▼                                                  │
+│  ┌──────────────┐ ┌──────────────┐                                       │
+│  │    Marimo     │ │   Evidence    │ ◄── Visualization (Dual Audience)   │
+│  │   :2718       │ │    :3000     │                                       │
+│  │  Python       │ │  Markdown    │                                       │
+│  └──────────────┘ └──────────────┘                                       │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Data Flow: RAWG API → dlt → DuckDB → SQLMesh → Soda → Marimo/Evidence
+Quality Gate: Soda Core + SQLMesh Tests
+```
 
 ## 📈 Data Lineage
 
 For detailed documentation of data flow and transformations, see [docs/data-flow.md](docs/data-flow.md).
 
-## 📊 Dashboard Screenshots
+## 🛠️ Why This Stack?
 
- ### Marimo Dashboard
+This project demonstrates a modern data engineering stack with intentional tool selection:
 
-![Marimo Dashboard](docs/images/dashboard.png)
+| Layer                | Tool        | Why Chosen                                                      | Alternative            |
+| -------------------- | ----------- | --------------------------------------------------------------- | ---------------------- |
+| **Ingestion**        | dlt         | Code-defined sources, **incremental loading**, automatic schema | Fivetran, Airbyte      |
+| **Storage**          | DuckDB      | Local analytics DB, zero config, fast                           | PostgreSQL, ClickHouse |
+| **Transformation**   | SQLMesh     | Virtual environments, built-in testing, no Jinja                | dbt                    |
+| **Quality**          | Soda Core   | Declarative contracts, CI/CD integration                        | Great Expectations     |
+| **Orchestration**    | Prefect 3.x | Python-native, great DX, modern UI                              | Airflow, Dagster       |
+| **Dashboard (Tech)** | Marimo      | Reactive Python notebooks, interactive                          | Streamlit, Jupyter     |
+| **Dashboard (Biz)**  | Evidence    | Markdown-first BI, static HTML output                           | Rill, Metabase         |
+| **Package Manager**  | uv          | 10-100x faster than pip, lockfile                               | pip, Poetry            |
+| **Build Tool**       | Just        | Modern Make alternative, better errors                          | Make                   |
 
-Reactive notebook-style dashboard for interactive data exploration
+This stack demonstrates **modern data engineering practices** while keeping the project accessible and reproducible.
 
-> **Note**: Replace placeholder screenshots above with actual screenshots of your dashboards.
+## ⚖️ Architectural Trade-offs
+
+| Decision           | Choice               | Rationale                                          | Alternative Considered          |
+| ------------------ | -------------------- | -------------------------------------------------- | ------------------------------- |
+| **Database**       | DuckDB               | Embedded analytics DB, zero config, fast queries   | PostgreSQL, ClickHouse          |
+| **Ingestion**      | dlt with incremental | Checkpoint-based, resumable, no duplicates         | Full reload (wastes API calls)  |
+| **Transformation** | SQLMesh              | Virtual envs for dev/prod parity, built-in tests   | dbt (popular, separate testing) |
+| **Quality**        | Soda + SQLMesh       | Defense in depth: contracts + transformation tests | Single tool (less coverage)     |
+| **Orchestration**  | Prefect 3.x          | Python-native, task retries with backoff           | Airflow (heavier, Java-centric) |
+| **Dashboards**     | Marimo + Evidence    | Dual audience: technical + business users          | Single tool (limited audience)  |
+
+## 🔧 Technical Challenges & Solutions
+
+### 1. Incremental Data Loading
+**Challenge**: RAWG API has rate limits; failed requests waste API credits.
+
+**Solution**: dlt's incremental loading with checkpoint persistence
+- Pipeline resumes from last checkpoint on failure
+- Only fetches changed records (using `updated` field)
+- Write disposition: `merge` prevents duplicates
+
+### 2. DuckDB File Locking
+**Challenge**: DuckDB has file-level locking, preventing concurrent reads/writes.
+
+**Solution**:
+- Marimo connects with `read_only=True` for concurrent reads
+- Pipeline writes run sequentially (Prefect handles orchestration)
+- No concurrent write contention in practice for this use case
+
+### 3. Data Quality at Scale
+**Challenge**: Ensuring integrity across raw → staging → marts layers.
+
+**Solution**: Defense-in-depth with layered quality gates
+- **Raw**: Soda contracts (schema, completeness, domain)
+- **Transformation**: SQLMesh tests (business logic)
+- **Marts**: Referential integrity, freshness checks
+
+### 4. Modern Tooling
+**Challenge**: Showcasing modern alternatives to legacy tools.
+
+**Solution**:
+- `uv` instead of `pip` (10-100x faster)
+- `Just` instead of `Make` (cleaner syntax)
+- `dlt` instead of custom scripts (battle-tested)
 
 ## 🚀 Quick Start
 
@@ -78,7 +148,6 @@ Reactive notebook-style dashboard for interactive data exploration
 
 - Python 3.12+
 - [uv](https://github.com/astral-sh/uv) package manager
-- Docker (optional, for containerized deployment)
 
 ### Installation
 
@@ -105,7 +174,7 @@ Reactive notebook-style dashboard for interactive data exploration
 4. **Run the pipeline**:
 
    ```bash
-   python main.py
+   uv run python main.py
    ```
 
 ### Demo Mode (No API Key Required)
@@ -113,44 +182,10 @@ Reactive notebook-style dashboard for interactive data exploration
 Try the project without a RAWG API key using sample data:
 
 ```bash
-make demo
+just demo
 ```
 
 This seeds the database with sample games and allows you to explore the dashboards without API access.
-
-### Using Docker
-
-All services can run in Docker containers. The entire stack is containerized:
-
-1. **Build and start all services**:
-
-   ```bash
-   docker compose up -d --build
-   ```
-
-2. **Check container health status**:
-
-   ```bash
-   docker compose ps
-   ```
-
- 3. **Access services**:
-    - **Prefect UI**: <http://localhost:4200>
-    - **Marimo Dashboard**: <http://localhost:2718>
-
-4. **View logs**:
-
-   ```bash
-   docker compose logs -f
-   ```
-
-5. **Stop all services**:
-
-   ```bash
-   docker compose down
-   ```
-
-For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
 
 ## 📁 Project Structure
 
@@ -162,8 +197,7 @@ gaming-analytics-pipeline/
 │   │   └── settings.py            # Environment-based configuration
 │   ├── extract/                   # Data extraction layer
 │   │   ├── __init__.py
-│   │   ├── base.py                # Base extractor interface
-│   │   └── rawg.py                # RAWG API extractor with retry logic
+│   │   └── dlt_source.py          # dlt source for RAWG API
 │   ├── load/                      # Data loading layer
 │   │   ├── __init__.py
 │   │   └── pipeline.py            # dlt pipeline for DuckDB
@@ -173,86 +207,59 @@ gaming-analytics-pipeline/
 │   │   └── tasks.py               # Prefect tasks
 │   ├── quality/                   # Data quality layer
 │   │   ├── __init__.py
-│   │   ├── checks.py              # Soda Core integration
-│   │   ├── configuration.py       # Soda configuration
-│   │   └── checks/                # Soda check files
-│   │       ├── staging.yml        # Staging layer checks
-│   │       └── marts.yml          # Mart layer checks
-│   ├── transform/                 # SQLMesh transformations
-│   │   ├── staging/               # Staging models (type casting, null handling)
-│   │   │   ├── stg_games.sql
-│   │   │   ├── stg_genres.sql
-│   │   │   └── stg_platforms.sql
-│   │   └── marts/                 # Mart models (business logic, aggregations)
-│   │       ├── games.sql          # Rating categories, engagement scores
-│   │       ├── genres.sql
-│   │       └── platforms.sql
-│   ├── __init__.py
-│   └── logging_config.py          # Structured logging setup
+│   │   ├── checks.py              # Soda Core + SQLMesh checks
+│   │   └── checks/                # Soda contract YAML files
+│   ├── demo/                      # Demo mode (no API key required)
+│   │   └── seed_database.py       # Sample data seeder
 │
-├── scripts/                       # Utility scripts
-│   ├── __init__.py
-│   └── seed_sample_data.py        # Demo data generator (no API key needed)
+├── marimo/                        # Marimo reactive dashboard
+│   └── gaming_analytics.py        # Interactive visualizations
 │
-├── tests/                         # Test suite
+├── evidence/                      # Evidence markdown-first BI dashboard
+│
+├── tests/                        # Test suite
+│   ├── test_config.py             # Config tests
+│   ├── test_demo.py               # Demo/seed tests
 │   ├── test_extract.py            # Extractor tests
 │   ├── test_load.py               # Pipeline tests
-│   ├── test_orchestrate.py        # Orchestration tests (integration)
+│   ├── test_orchestrate.py       # Prefect orchestration tests
+│   ├── test_quality.py            # Quality checks tests
 │   ├── test_transform.py          # Transformation tests
-│   ├── sqlmesh/                   # SQLMesh native tests
-│   │   ├── README.md
-│   │   ├── test_no_null_game_names.sql
-│   │   ├── test_rating_ranges.sql
-│   │   └── test_engagement_score_positive.sql
 │   └── conftest.py                # Pytest fixtures
 │
-├── marimo/                     # Marimo reactive dashboard
- │   └── gaming_analytics.py        # Interactive visualizations
- │
 ├── docs/                          # Documentation
 │   ├── adr/                       # Architecture Decision Records
-│   │   ├── 001-choose-duckdb-over-postgresql.md
-│   │   ├── 002-choose-prefect-over-airflow.md
-│   │   └── 003-choose-sqlmesh-over-dbt.md
-│   ├── images/                    # Dashboard screenshots
-│   │   └── README.md
-│   ├── data-flow.md               # Data lineage (Mermaid diagrams)
-│   └── data-retention.md          # Data retention policies
+│   └── data-flow.md              # Data flow documentation
 │
 ├── data/                          # DuckDB database files (gitignored)
 ├── logs/                          # Application logs (gitignored)
 ├── htmlcov/                       # Test coverage reports (gitignored)
 │
 ├── .github/workflows/             # CI/CD pipelines
-│   └── ci.yml                     # Lint, test, build, security scan
+│   └── ci.yml                     # Lint and test
 │
 ├── .env.example                   # Environment configuration template
 ├── .gitignore                     # Git ignore patterns
-├── .pre-commit-config.yaml        # Pre-commit hooks
 ├── .sqlfluff                      # SQL linter configuration
 ├── LICENSE                        # MIT License
 ├── README.md                      # Project documentation
-├── DOCKER_SETUP.md                # Docker setup guide
-├── CONTRIBUTING.md                # Contribution guidelines
-├── main.py                        # CLI entry point (Click)
-├── compose.yaml                   # Docker Compose (3 services)
-├── Dockerfile                     # Prefect pipeline container
- ├── Dockerfile.marimo              # Marimo dashboard container
+├── main.py                        # Pipeline entry point
 ├── pyproject.toml                 # Project dependencies & tool config
 ├── uv.lock                        # Dependency lock file
-├── Makefile                       # Development commands
-└── sqlmesh.yaml                   # SQLMesh configuration
+├── justfile                       # Development commands
+└── sqlmesh/                       # SQLMesh project
+    └── sqlmesh.yaml              # SQLMesh configuration
 ```
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-| Variable           | Description                 | Required |
-| ------------------ | --------------------------- | -------- |
-| `RAWG_API_KEY`     | RAWG API key                | Yes      |
-| `DATABASE_PATH`    | Path to DuckDB database     | No       |
-| `PREFECT_API_URL`  | Prefect API URL             | No       |
+| Variable          | Description             | Required |
+| ----------------- | ----------------------- | -------- |
+| `RAWG_API_KEY`    | RAWG API key            | Yes      |
+| `DB_PATH`         | Path to DuckDB database | No       |
+| `PREFECT_API_URL` | Prefect API URL         | No       |
 
 ### API Keys
 
@@ -262,21 +269,23 @@ Get your API keys:
 
 ## 📊 Data Model
 
+### Raw Layer
+
+- `raw.games`: Raw game data from RAWG (with nested JSON arrays for genres, platforms)
+- `raw.genres`: Genre information
+- `raw.platforms`: Platform information
+
 ### Staging Layer
 
-- `stg_games`: Staging games data with type casting and null handling
-- `stg_genres`: Staging genres data with type casting and null handling
-- `stg_platforms`: Staging platforms data with type casting and null handling
-
-- `rawg_games`: Raw game data from RAWG
-- `rawg_genres`: Genre information
-- `rawg_platforms`: Platform information
+- `staging.stg_games`: Staging games data with type casting and null handling (also preserves `genres` and `platforms` JSON columns)
+- `staging.stg_genres`: Staging genres data with type casting and null handling
+- `staging.stg_platforms`: Staging platforms data with type casting and null handling
 
 ### Mart Layer
 
-- `marts_games`: Enriched game data with metrics
-- `marts_genres`: Aggregated genre statistics
-- `marts_platforms`: Platform analytics
+- `marts.fct_games`: Enriched game data with rating categories, engagement scores, and release year/month extraction
+- `marts.fct_genres`: Aggregated genre statistics using DuckDB's `json_each` to explode genres from games
+- `marts.fct_platforms`: Aggregated platform statistics using DuckDB's `json_each` to explode platforms from games
 
 ## 🧪 Testing
 
@@ -306,26 +315,16 @@ The pipeline runs in the following order:
 2. **Load**: Store data in DuckDB using dlt
 3. **Transform**: Apply SQLMesh transformations
 4. **Quality**: Validate data with Soda Core + SQLMesh tests
- 5. **Visualize**: View insights in Marimo dashboard
+5. **Visualize**: View insights in Marimo dashboard
 
 ## 📈 Monitoring
-
-### Prefect UI
-
-Monitor pipeline execution:
-
-```bash
-prefect server start
-```
-
-Visit <http://localhost:4200>
 
 ### Data Quality
 
 View Soda Core results:
 
 ```bash
-python -m src.gaming_pipeline.quality.checks
+just soda-scan
 ```
 
 ### Marimo Dashboard Overview
@@ -342,7 +341,7 @@ Or run dashboard server:
 marimo edit marimo/gaming_analytics.py --headless --host 0.0.0.0 --port 2718 --no-token
 ```
 
-**Note**: Use `--host 0.0.0.0` (not `localhost`) for Docker compatibility and `--no-token` to disable cloud auth prompts.
+**Note**: Use `--host 0.0.0.0` (not `localhost`) for network access and `--no-token` to disable cloud auth prompts.
 
 Access at <http://localhost:2718>
 
@@ -357,16 +356,6 @@ This project uses automated security scanning to ensure code and dependency safe
   - Identifies common security issues (SQL injection, hardcoded secrets, etc.)
   - Configured in `pyproject.toml` under `[tool.ruff.lint]`
 
-- **[uv audit](https://docs.astral.sh/uv/guides/integration/dependency-bots/)**: Built-in dependency vulnerability scanner
-  - Checks Python dependencies for known vulnerabilities
-  - Audits against PyPI and GitHub Advisory Database
-  - Runs in CI/CD pipeline with `uv audit --preview-features audit`
-
-- **[Gitleaks](https://github.com/gitleaks/gitleaks)**: Secrets detection
-  - Scans code for accidentally committed secrets (API keys, tokens, passwords)
-  - Runs as pre-commit hook and in CI/CD
-  - Configured in `.pre-commit-config.yaml`
-
 - **[sqlfluff](https://sqlfluff.com/)**: SQL linting
   - Identifies SQL anti-patterns and syntax errors
   - Enforces consistent SQL style
@@ -375,24 +364,13 @@ This project uses automated security scanning to ensure code and dependency safe
 ### Running Security Checks
 
 ```bash
-# Run all security checks
-make lint-security
-
 # Run Ruff security rules
-uv run ruff check src/ tests/ --select S
-
-# Run uv audit (dependency scanner)
-uv audit --preview-features audit
-
-# Run detect-secrets (secrets detection)
-uv run detect-secrets scan --baseline .secrets.baseline
+just lint-security
 ```
 
 ### Security Reports
 
-- Ruff security issues are shown in CI logs and pre-commit
-- uv audit vulnerabilities are shown in CI logs
-- Gitleaks secrets detection runs in pre-commit and CI
+- Ruff security issues are shown in CI logs
 - Transitive dependency CVEs are managed by upstream package maintainers
 
 ### Best Practices
@@ -409,14 +387,6 @@ uv run detect-secrets scan --baseline .secrets.baseline
 **Issue**: API rate limiting
 
 - **Solution**: Add delays between requests or upgrade API plan
-
-**Issue**: Docker container fails to start
-
-- **Solution**: Check health status with `docker compose ps` and view logs with `docker compose logs <service>`
-
-**Issue**: Cannot access dashboard from outside container
-
-- **Solution**: Ensure port mappings in `compose.yaml` are correct and services bind to `0.0.0.0`
 
 ## 🤝 Contributing
 
@@ -443,20 +413,14 @@ ruff format src/ tests/
 ty check src/
 
 # Lint SQL files
-sqlfluff lint evidence/
-```
-
-All these checks are available via pre-commit hooks:
-
-```bash
-pre-commit run --all-files
+sqlfluff lint sqlmesh/
 ```
 
 ### Adding New Features
 
 1. Add new extraction logic in `src/gaming_pipeline/extract/`
-2. Create new transformations in `src/gaming_pipeline/transform/`
-3. Add data quality checks in `src/gaming_pipeline/quality/`
+2. Create new SQLMesh models in `sqlmesh/models/staging/` or `sqlmesh/models/marts/`
+3. Add Soda quality checks in `src/gaming_pipeline/quality/checks/`
 4. Write tests in `tests/`
 5. Update documentation
 
@@ -471,8 +435,8 @@ This project is licensed under MIT License.
 - [Prefect](https://www.prefect.io/) for orchestration
 - [Soda Core](https://www.soda.io/) for data quality
 - [SQLMesh](https://sqlmesh.com/) for transformations
-- [Marimo](https://marimo.io/) for visualization
 - [Marimo](https://marimo.io/) for interactive data exploration
+- [Evidence](https://evidence.dev/) for markdown-first BI dashboards
 
 ## 📞 Support
 
@@ -482,6 +446,3 @@ For issues and questions:
 - Check the documentation
 - Review existing issues
 
----
-
-Built with ❤️ for gaming analytics

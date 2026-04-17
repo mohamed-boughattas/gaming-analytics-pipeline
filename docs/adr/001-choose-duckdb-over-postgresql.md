@@ -38,14 +38,6 @@ While PostgreSQL is a robust production database, for this use case:
 - Higher operational complexity
 - No significant advantage for analytical workloads on this dataset size
 
-### MotherDuck Integration
-
-We maintain the option to use MotherDuck for cloud deployment, which provides:
-
-- DuckDB compatibility (no migration needed)
-- Serverless scaling
-- Easy sharing and collaboration
-
 ## Consequences
 
 - **Positive**: Simplified development workflow, easier demos, lower costs
