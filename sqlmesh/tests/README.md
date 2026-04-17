@@ -4,23 +4,22 @@ This directory contains SQLMesh native tests for data quality validation.
 
 ## Running Tests
 
-SQLMesh tests can be run as part of the SQLMesh workflow:
-
 ```bash
-# Run all SQLMesh tests
-make sqlmesh-test
-
-# Or directly with sqlmesh
-uv run sqlmesh test
+just sqlmesh-test
 ```
 
 ## Test Files
 
-| File                                 | Purpose                                    | Expected Result   |
-| ------------------------------------ | ------------------------------------------ | ----------------- |
-| `test_no_null_game_names.sql`        | Ensures all games have names               | 0 NULL names      |
-| `test_rating_ranges.sql`             | Validates ratings are in 0-10 range        | 0 invalid ratings |
-| `test_engagement_score_positive.sql` | Validates engagement_score is non-negative | 0 negative scores |
+| File | Purpose | Expected Result |
+|---|---|---|
+| `test_no_future_release_dates.sql` | No release dates in the future | 0 future releases |
+| `test_no_null_game_names.sql` | All games have names | 0 NULL names |
+| `test_rating_ranges.sql` | Ratings in 0-5 range | 0 invalid ratings |
+| `test_engagement_score_positive.sql` | Engagement score >= 0 | 0 negative scores |
+| `test_fct_genres_no_null_names.sql` | All genres have names | 0 NULL names |
+| `test_fct_genres_valid_ranges.sql` | Genre aggregations in valid range | 0 rows with issues |
+| `test_fct_platforms_no_null_names.sql` | All platforms have names | 0 NULL names |
+| `test_fct_platforms_valid_ranges.sql` | Platform aggregations in valid range | 0 rows with issues |
 
 ## Writing New Tests
 
@@ -28,14 +27,13 @@ SQLMesh tests are SQL queries that:
 
 1. Return a count of records failing the test
 2. Expected result is 0 (no failures)
-3. Can be run against any environment (dev, test, prod)
 
 Example test pattern:
 
 ```sql
 -- Ensure all IDs are unique
 SELECT COUNT(*) - COUNT(DISTINCT id) AS duplicate_ids
-FROM gaming_analytics.marts_games;
+FROM marts.fct_games;
 
 -- Expected: 0
 ```
@@ -44,7 +42,7 @@ FROM gaming_analytics.marts_games;
 
 SQLMesh tests complement Soda Core checks:
 
-- **Soda Core**: Run in CI/CD for pipeline validation
-- **SQLMesh Tests**: Part of transformation validation workflow
+- **Soda Core**: Declarative column-level contracts
+- **SQLMesh Tests**: Business logic and transformation validation
 
-Both should be used together for comprehensive data quality.
+Both are used together for defense-in-depth data quality.

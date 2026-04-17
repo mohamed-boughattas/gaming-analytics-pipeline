@@ -4,7 +4,7 @@ gateways:
   local:
     connection:
       type: duckdb
-      database: ../data/gaming_analytics.duckdb
+      database: /Users/mohamedboughattas/gaming-analytics-pipeline/data/gaming_analytics.duckdb
 
 default_gateway: local
 
