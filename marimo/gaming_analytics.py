@@ -3,6 +3,18 @@ import marimo
 __generated_with = "0.15.1"
 app = marimo.App(width="full")
 
+_connection = None
+
+
+def get_connection():
+    """Get or create a singleton DuckDB connection."""
+    global _connection
+    if _connection is None:
+        import duckdb
+
+        _connection = duckdb.connect("data/gaming_analytics.duckdb", read_only=True)
+    return _connection
+
 
 @app.cell
 def _():
@@ -14,26 +26,34 @@ def _():
 
 @app.cell
 def _():
-    # Connect to DuckDB database
-    import duckdb
     import pandas as pd
     import plotly.express as px
 
     from gaming_pipeline.config import settings
 
-    con = duckdb.connect(settings.database.path, read_only=True)
+    con = get_connection()
     return con, pd, px
 
 
 @app.cell
 def _(con, mo):
-    # Load games data
     games_df = con.execute(
         """
-        SELECT *
-        FROM marts.games
+        SELECT
+            id,
+            name,
+            released,
+            rating,
+            ratings_count,
+            playtime,
+            rating_category,
+            release_year,
+            engagement_score,
+            updated
+        FROM marts.fct_games
+        WHERE id IS NOT NULL
         ORDER BY released DESC
-        LIMIT 1000
+        LIMIT 5000
     """
     ).df()
     mo.ui.table(games_df)
@@ -42,17 +62,15 @@ def _(con, mo):
 
 @app.cell
 def _(con, mo):
-    # Load genres data
-    genres_df = con.execute(
+    games_df = con.execute(
         """
         SELECT
             id as genre_id,
             name,
             total_games as games_count,
-            avg_rating,
-            excellent_pct,
-            good_pct
-        FROM marts.genres
+            avg_rating
+        FROM marts.fct_genres
+        WHERE id IS NOT NULL
         ORDER BY total_games DESC
     """
     ).df()
@@ -62,7 +80,6 @@ def _(con, mo):
 
 @app.cell
 def _(con, mo):
-    # Load platforms data
     platforms_df = con.execute(
         """
         SELECT
@@ -71,7 +88,8 @@ def _(con, mo):
             total_games as games_count,
             avg_rating,
             year_start
-        FROM marts.platforms
+        FROM marts.fct_platforms
+        WHERE id IS NOT NULL
         ORDER BY total_games DESC
     """
     ).df()
@@ -81,26 +99,22 @@ def _(con, mo):
 
 @app.cell
 def _(games_df, mo):
-    # KPI Summary Cards
     total_games = len(games_df)
     avg_rating = games_df["rating"].mean()
-    avg_metacritic = games_df["metacritic"].mean()
 
     kpi_row = mo.hstack(
         [
             mo.stat(label="Total Games", value=f"{total_games:,}"),
             mo.stat(label="Avg Rating", value=f"{avg_rating:.2f}"),
-            mo.stat(label="Avg Metacritic", value=f"{avg_metacritic:.1f}"),
         ],
         gap=2,
     )
-    kpi_row  # noqa: B018
+    kpi_row
     return
 
 
 @app.cell
 def _(games_df, mo):
-    # Interactive filters
     year_slider = mo.ui.slider(
         games_df["release_year"].min(),
         games_df["release_year"].max(),
@@ -116,18 +130,16 @@ def _(games_df, mo):
 
 @app.cell
 def _(games_df, min_rating, mo, px, year_slider):
-    # Filtered data based on user input
     filtered_games = games_df[
         (games_df["release_year"] <= year_slider.value)
         & (games_df["rating"] >= min_rating.value)
     ]
 
-    # Games by rating visualization
     fig = px.scatter(
         filtered_games.head(100),
         x="rating",
         y="ratings_count",
-        size="metacritic",
+        size="playtime",
         color="rating_category",
         hover_name="name",
         title="Games by Rating vs Ratings Count (Filtered)",
@@ -140,7 +152,6 @@ def _(games_df, min_rating, mo, px, year_slider):
 
 @app.cell
 def _(filtered_games, mo, px):
-    # Rating distribution by category
     rating_category_fig = px.histogram(
         filtered_games,
         x="rating_category",
@@ -154,7 +165,6 @@ def _(filtered_games, mo, px):
 
 @app.cell
 def _(genres_df, mo, px):
-    # Top genres by games count
     genres_fig = px.bar(
         genres_df.head(10),
         x="name",
@@ -171,7 +181,6 @@ def _(genres_df, mo, px):
 
 @app.cell
 def _(mo, platforms_df, px):
-    # Platforms by games count
     platforms_fig = px.bar(
         platforms_df.head(15),
         x="platform_name",
@@ -188,7 +197,6 @@ def _(mo, platforms_df, px):
 
 @app.cell
 def _(games_df, mo, px):
-    # Rating distribution histogram
     rating_dist_fig = px.histogram(
         games_df,
         x="rating",
@@ -203,23 +211,6 @@ def _(games_df, mo, px):
 
 @app.cell
 def _(games_df, mo, px):
-    # Metacritic vs Rating correlation
-    metacritic_fig = px.scatter(
-        games_df,
-        x="metacritic",
-        y="rating",
-        color="rating_category",
-        title="Metacritic Score vs User Rating Correlation",
-        labels={"metacritic": "Metacritic Score", "rating": "User Rating"},
-    )
-    metacritic_fig.update_layout(height=500)
-    mo.ui.plotly(metacritic_fig)
-    return
-
-
-@app.cell
-def _(games_df, mo, px):
-    # Games released over time (yearly trend)
     yearly_games = games_df.groupby("release_year").size().reset_index(name="count")
     yearly_fig = px.line(
         yearly_games,
@@ -235,11 +226,9 @@ def _(games_df, mo, px):
 
 @app.cell
 def _(games_df, genres_df, mo, pd, platforms_df):
-    # Data summary statistics
     summary_stats = {
         "Total Games": len(games_df),
         "Average Rating": f"{games_df['rating'].mean():.2f}",
-        "Average Metacritic": f"{games_df['metacritic'].mean():.1f}",
         "Total Genres": len(genres_df),
         "Total Platforms": len(platforms_df),
         "Data Last Updated": games_df["updated"].max().strftime("%Y-%m-%d %H:%M:%S"),
@@ -252,7 +241,6 @@ def _(games_df, genres_df, mo, pd, platforms_df):
 
 @app.cell
 def _(games_df, mo):
-    # Show raw table with all columns
     mo.md("### Games Table (Raw Data)")
     mo.ui.table(games_df)
     return
@@ -260,7 +248,6 @@ def _(games_df, mo):
 
 @app.cell
 def _(genres_df, mo):
-    # Show genres table
     mo.md("### Genres Table")
     mo.ui.table(genres_df)
     return
@@ -268,7 +255,6 @@ def _(genres_df, mo):
 
 @app.cell
 def _(mo, platforms_df):
-    # Show platforms table
     mo.md("### Platforms Table")
     mo.ui.table(platforms_df)
     return
