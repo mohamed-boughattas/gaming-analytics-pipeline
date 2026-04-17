@@ -11,7 +11,6 @@ from .settings import (
     settings,
 )
 
-# Suppress harmless Pydantic Settings warnings about deprecated config keys
 warnings.filterwarnings(  # noqa: E402
     "ignore",
     message=".*pyproject_toml_table_header.*will be ignored.*",
@@ -23,7 +22,6 @@ warnings.filterwarnings(  # noqa: E402
     category=UserWarning,
 )
 
-# Maintain backward compatibility with old name
 config = settings
 
 __all__ = [

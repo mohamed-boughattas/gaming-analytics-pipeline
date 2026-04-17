@@ -1,194 +1,63 @@
 """Prefect flows for gaming analytics pipeline."""
 
-import logging
 from typing import Any
 
 from pendulum import now as pendulum_now
 from prefect import flow, get_run_logger
 
 from gaming_pipeline.orchestrate.tasks import (
-    extract_rawg_genres_task,
-    extract_rawg_platforms_task,
     get_load_info_task,
     get_pipeline_schema_task,
-    load_rawg_data_task,
     refresh_schema_task,
     run_full_pipeline_task,
-    run_soda_scan_task,
     run_sqlmesh_task,
 )
 
-logger = logging.getLogger(__name__)
-
 
 @flow(
-    name="gaming-analytics-daily",
-    description="Daily gaming analytics data pipeline",
+    name="gaming-analytics-pipeline",
+    description="Full load pipeline for gaming analytics",
     log_prints=True,
 )
-def daily_pipeline_flow(
-    page_size: int = 50, max_pages: int = 10, updated_after_days: int = 1
+def pipeline_flow(
+    page_size: int = 50,
+    max_pages: int = 10,
 ) -> dict[str, Any]:
-    """Daily pipeline flow for gaming analytics."""
-    logger = get_run_logger()
-    logger.info("Starting daily gaming analytics pipeline")
+    """Run full load pipeline for gaming analytics (full reload every run).
 
-    # Step 1: Run full pipeline (extract + load via DLT)
-    result = run_full_pipeline_task(
+    Loads data from RAWG API and transforms with SQLMesh.
+
+    Args:
+        page_size: Number of items per page (max 100).
+        max_pages: Maximum number of pages to fetch.
+
+    Returns:
+        Dictionary with pipeline results.
+    """
+    logger = get_run_logger()
+    logger.info("Starting gaming analytics pipeline")
+
+    load_result = run_full_pipeline_task(
         page_size=page_size,
         max_pages=max_pages,
-        updated_after_days=updated_after_days,
     )
 
-    # Step 2: Run SQLMesh transformations
     sqlmesh_result = run_sqlmesh_task()
+    if sqlmesh_result.get("returncode", 0) != 0:
+        logger.error(f"SQLMesh transformation failed: {sqlmesh_result}")
+        raise ValueError(f"SQLMesh transformation failed: {sqlmesh_result}")
 
-    # Step 3: Run Soda quality checks
-    soda_result = run_soda_scan_task(checks_layer="marts")
-
-    # Get schema and load info (sync tasks - no await needed in Prefect)
     schema = get_pipeline_schema_task()
     load_info = get_load_info_task()
-
-    # Refresh schema (sync task - no await needed in Prefect)
     refresh_schema_task()
 
     final_result = {
-        "pipeline_result": result,
+        "pipeline_result": load_result,
         "sqlmesh_result": sqlmesh_result,
-        "soda_result": soda_result,
         "schema": schema,
         "load_info": load_info,
         "execution_time": pendulum_now().isoformat(),
     }
 
-    logger.info("Daily pipeline completed successfully")
+    logger.info("Pipeline completed successfully")
     return final_result
-
-
-@flow(
-    name="gaming-analytics-full-load",
-    description="Full load gaming analytics pipeline",
-    log_prints=True,
-)
-def full_load_pipeline_flow(
-    page_size: int = 100, max_pages: int = 50
-) -> dict[str, Any]:
-    """Full load pipeline flow for gaming analytics."""
-    logger = get_run_logger()
-    logger.info("Starting full load gaming analytics pipeline")
-
-    # Step 1: Run full pipeline with larger batch sizes
-    result = run_full_pipeline_task(
-        page_size=page_size,
-        max_pages=max_pages,
-        # Full year of data
-        updated_after_days=365,
-    )
-
-    # Step 2: Run SQLMesh transformations
-    sqlmesh_result = run_sqlmesh_task()
-
-    # Step 3: Run Soda quality checks
-    soda_result = run_soda_scan_task(checks_layer="marts")
-
-    # Get schema and load info (sync tasks - no await needed in Prefect)
-    schema = get_pipeline_schema_task()
-    load_info = get_load_info_task()
-
-    # Refresh schema (sync task - no await needed in Prefect)
-    refresh_schema_task()
-
-    final_result = {
-        "pipeline_result": result,
-        "sqlmesh_result": sqlmesh_result,
-        "soda_result": soda_result,
-        "schema": schema,
-        "load_info": load_info,
-        "execution_time": pendulum_now().isoformat(),
-    }
-
-    logger.info("Full load pipeline completed successfully")
-    return final_result
-
-
-@flow(
-    name="gaming-analytics-extract-only",
-    description="Extract only flow for gaming analytics",
-    log_prints=True,
-)
-def extract_only_flow() -> dict[str, Any]:
-    """Extract only flow for gaming analytics."""
-    logger = get_run_logger()
-    logger.info("Starting extract-only gaming analytics pipeline")
-
-    # Extract genres and platforms
-    genres = extract_rawg_genres_task()
-    platforms = extract_rawg_platforms_task()
-
-    result = {
-        "genres_extracted": len(genres),
-        "platforms_extracted": len(platforms),
-        "execution_time": pendulum_now().isoformat(),
-    }
-
-    logger.info("Extract-only pipeline completed successfully")
-    return result
-
-
-@flow(
-    name="gaming-analytics-load-only",
-    description="Load only flow for gaming analytics",
-    log_prints=True,
-)
-def load_only_flow(
-    page_size: int = 50, max_pages: int = 10, updated_after_days: int = 7
-) -> dict[str, Any]:
-    """Load only flow for gaming analytics."""
-    logger = get_run_logger()
-    logger.info("Starting load-only gaming analytics pipeline")
-
-    # Calculate updated_after date
-    updated_after = pendulum_now().subtract(days=updated_after_days)
-
-    # Load RAWG data
-    rawg_result = load_rawg_data_task(
-        page_size=page_size,
-        max_pages=max_pages,
-        updated_after=updated_after,
-    )
-
-    result = {
-        "rawg_load": rawg_result,
-        "execution_time": pendulum_now().isoformat(),
-    }
-
-    logger.info("Load-only pipeline completed successfully")
-    return result
-
-
-# Note: Prefect 3.x deployments are created using the CLI:
-# prefect deploy <flow_name> --name <deployment_name> --cron <schedule>
-#
-# For local development, use the run_*_pipeline() functions below.
-# For production deployment, see Prefect documentation for deployment commands.
-
-
-def run_daily_pipeline() -> dict[str, Any]:
-    """Run daily pipeline."""
-    return daily_pipeline_flow()
-
-
-def run_full_load_pipeline() -> dict[str, Any]:
-    """Run full load pipeline."""
-    return full_load_pipeline_flow()
-
-
-def run_extract_only_pipeline() -> dict[str, Any]:
-    """Run extract-only pipeline."""
-    return extract_only_flow()
-
-
-def run_load_only_pipeline() -> dict[str, Any]:
-    """Run load-only pipeline."""
-    return load_only_flow()

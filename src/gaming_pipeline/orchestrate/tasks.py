@@ -1,8 +1,8 @@
 """Prefect tasks for gaming analytics pipeline."""
 
 import logging
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+import secrets
+from typing import Any
 
 from pendulum import now as pendulum_now
 from prefect import task
@@ -11,99 +11,23 @@ from prefect.artifacts import create_markdown_artifact
 from gaming_pipeline.config import settings
 from gaming_pipeline.load.pipeline import GamingPipeline
 
-if TYPE_CHECKING:
-    import pendulum
-
 logger = logging.getLogger(__name__)
 
 
-@task(
-    name="Extract RAWG Genres",
-    description="Extract genre data from RAWG API",
-    retries=3,
-    retry_delay_seconds=30,
-)
-def extract_rawg_genres_task() -> list[dict[str, Any]]:
-    """Extract genres from RAWG API using full pipeline load."""
-    logger.info("Starting RAWG genres extraction")
-    pipeline = GamingPipeline()
-    result = pipeline.load_rawg_data(page_size=100, max_pages=1)
-    genres_count = result.get("genres", 0)
+def exponential_backoff_with_jitter(attempt: int) -> list[float]:
+    """Calculate exponential backoff with jitter for retries.
 
-    # Create artifact with summary
-    create_markdown_artifact(
-        key="rawg-genres-summary",
-        markdown=f"## RAWG Genres Extraction\n\nExtracted {genres_count} genres",
-        description="Summary of RAWG genres extraction",
-    )
+    Args:
+        attempt: The attempt number (0-indexed).
 
-    logger.info(f"Successfully extracted {genres_count} genres")
-    return [{"count": genres_count}]
-
-
-@task(
-    name="Extract RAWG Platforms",
-    description="Extract platform data from RAWG API",
-    retries=3,
-    retry_delay_seconds=30,
-)
-def extract_rawg_platforms_task() -> list[dict[str, Any]]:
-    """Extract platforms from RAWG API using full pipeline load."""
-    logger.info("Starting RAWG platforms extraction")
-    pipeline = GamingPipeline()
-    result = pipeline.load_rawg_data(page_size=100, max_pages=1)
-    platforms_count = result.get("platforms", 0)
-
-    # Create artifact with summary
-    create_markdown_artifact(
-        key="rawg-platforms-summary",
-        markdown=(
-            f"## RAWG Platforms Extraction\n\nExtracted {platforms_count} platforms"
-        ),
-        description="Summary of RAWG platforms extraction",
-    )
-
-    logger.info(f"Successfully extracted {platforms_count} platforms")
-    return [{"count": platforms_count}]
-
-
-@task(
-    name="Load RAWG Data",
-    description="Load RAWG data into DuckDB",
-    retries=2,
-    retry_delay_seconds=60,
-)
-def load_rawg_data_task(
-    page_size: int = 20,
-    max_pages: int = 10,
-    updated_after: "pendulum.DateTime | None" = None,
-) -> dict[str, Any]:
-    """Load RAWG data into pipeline."""
-    logger.info("Starting RAWG data load")
-
-    pipeline = GamingPipeline()
-    result = pipeline.load_rawg_data(
-        page_size=page_size, max_pages=max_pages, updated_after=updated_after
-    )
-
-    # Create artifact with load summary
-    markdown_content = f"""
-## RAWG Data Load Summary
-
-- **Total Games Loaded**: {result.get("total_games", 0)}
-- **Genres Loaded**: {result.get("genres", 0)}
-- **Platforms Loaded**: {result.get("platforms", 0)}
-- **Load Timestamp**: {pendulum_now().isoformat()}
-"""
-
-    create_markdown_artifact(
-        key="rawg-load-summary",
-        markdown=markdown_content,
-        description="Summary of RAWG data load",
-    )
-
-    logger.info(f"Successfully loaded RAWG data: {result}")
-    return result
+    Returns:
+        List of delay in seconds.
+    """
+    base_delay = 30
+    max_delay = 300
+    delay = min(base_delay * (2**attempt), max_delay)
+    jitter = secrets.randbelow(11)
+    return [delay + jitter]
 
 
 @task(
@@ -112,16 +36,27 @@ def load_rawg_data_task(
     retries=1,
     retry_delay_seconds=120,
 )
-def run_full_pipeline_task(
-    page_size: int = 50, max_pages: int = 10, updated_after_days: int = 30
-) -> dict[str, Any]:
-    """Run complete gaming analytics pipeline."""
-    logger.info("Starting full pipeline execution")
+def run_full_pipeline_task(page_size: int = 50, max_pages: int = 10) -> dict[str, Any]:
+    """Run complete gaming analytics pipeline (full reload every run).
+
+    Args:
+        page_size: Number of items per page.
+        max_pages: Maximum number of pages to fetch.
+
+    Returns:
+        Dictionary with load statistics and timestamp.
+    """
+    logger.info(
+        "Starting full pipeline execution "
+        f"(page_size={page_size}, max_pages={max_pages})"
+    )
 
     pipeline = GamingPipeline()
-    result = pipeline.run_full_load()
+    result = pipeline.run_full_load(
+        page_size=page_size,
+        max_pages=max_pages,
+    )
 
-    # Create comprehensive artifact
     rawg_result = result.get("rawg", {})
     markdown_content = f"""
 # Gaming Analytics Pipeline Summary
@@ -130,6 +65,7 @@ def run_full_pipeline_task(
 - **Pipeline Name**: gaming-analytics
 - **Execution Time**: {result.get("timestamp", pendulum_now().isoformat())}
 - **Environment**: {"Production" if settings.is_production else "Development"}
+- **Load Type**: Full Reload (replace)
 
 ## RAWG Data Load Results
 - **Total Games**: {rawg_result.get("total_games", 0)}
@@ -139,7 +75,6 @@ def run_full_pipeline_task(
 ## Performance Notes
 - Page Size: {page_size}
 - Max Pages: {max_pages}
-- Updated After: {updated_after_days} days
 """
 
     create_markdown_artifact(
@@ -154,7 +89,11 @@ def run_full_pipeline_task(
 
 @task(name="Get Pipeline Schema", description="Get current pipeline schema information")
 def get_pipeline_schema_task() -> dict[str, Any]:
-    """Get current pipeline schema."""
+    """Get current pipeline schema.
+
+    Returns:
+        Dictionary with pipeline schema information.
+    """
     logger.info("Retrieving pipeline schema")
 
     pipeline = GamingPipeline()
@@ -165,10 +104,15 @@ def get_pipeline_schema_task() -> dict[str, Any]:
 
 
 @task(
-    name="Get Load Information", description="Get information about last pipeline load"
+    name="Get Load Information",
+    description="Get information about last pipeline load",
 )
 def get_load_info_task() -> dict[str, Any]:
-    """Get information about last load."""
+    """Get information about last load.
+
+    Returns:
+        Dictionary with load information.
+    """
     logger.info("Retrieving load information")
 
     pipeline = GamingPipeline()
@@ -183,7 +127,7 @@ def get_load_info_task() -> dict[str, Any]:
     description="Refresh pipeline schema from destination",
 )
 def refresh_schema_task() -> None:
-    """Refresh pipeline schema."""
+    """Refresh pipeline schema from destination."""
     logger.info("Refreshing pipeline schema")
 
     pipeline = GamingPipeline()
@@ -199,15 +143,35 @@ def refresh_schema_task() -> None:
     retry_delay_seconds=60,
 )
 def run_sqlmesh_task() -> dict[str, Any]:
-    """Run SQLMesh transformations."""
+    """Run SQLMesh transformations.
+
+    Returns:
+        Dictionary with return code, stdout, and stderr from SQLMesh.
+    """
+    import subprocess
+
     logger.info("Starting SQLMesh transformations")
 
-    from gaming_pipeline.transform.sqlmesh_runner import SQLMeshRunner
+    try:
+        result = subprocess.run(  # noqa: S603,S607
+            ["sqlmesh", "plan", "--auto-apply"],  # noqa: S603,S607
+            capture_output=True,
+            text=True,
+            timeout=300,
+            cwd="sqlmesh",
+        )
+        returncode = result.returncode
+        stdout = result.stdout
+        stderr = result.stderr
+    except subprocess.TimeoutExpired:
+        logger.error("SQLMesh apply timed out")
+        return {"returncode": -1, "stdout": "", "stderr": "Timed out"}
+    except Exception as e:
+        logger.error(f"SQLMesh apply error: {e}")
+        return {"returncode": 1, "stdout": "", "stderr": str(e)}
 
-    runner = SQLMeshRunner()
-    result = runner.apply()
+    result = {"returncode": returncode, "stdout": stdout, "stderr": stderr}
 
-    # Create artifact with SQLMesh summary
     markdown_content = f"""
 ## SQLMesh Transformations Summary
 
@@ -223,44 +187,4 @@ def run_sqlmesh_task() -> dict[str, Any]:
     )
 
     logger.info(f"SQLMesh transformations completed: {result}")
-    return result
-
-
-@task(
-    name="Run Soda Quality Checks",
-    description="Run Soda v4 data quality checks on transformed data",
-    retries=1,
-    retry_delay_seconds=30,
-)
-def run_soda_scan_task(
-    checks_layer: str = "marts",
-) -> dict[str, Any]:
-    """Run Soda quality checks using v4 contracts."""
-    logger.info(f"Starting Soda scan for {checks_layer} layer")
-
-    from gaming_pipeline.quality.checks import SodaScanner
-
-    checks_path = (
-        Path(__file__).parent.parent / "quality" / "checks" / f"{checks_layer}.yml"
-    )
-
-    scanner = SodaScanner()
-    result = scanner.run_checks(contract_path=checks_path)
-
-    # Create artifact with scan summary
-    markdown_content = f"""
-## Soda Quality Scan Summary
-
-- **Layer**: {checks_layer}
-- **Status**: {"Passed" if result.get("passed") else "Failed"}
-- **Execution Time**: {pendulum_now().isoformat()}
-"""
-
-    create_markdown_artifact(
-        key=f"soda-scan-{checks_layer}",
-        markdown=markdown_content,
-        description=f"Summary of Soda quality checks for {checks_layer}",
-    )
-
-    logger.info(f"Soda scan completed: {result}")
     return result

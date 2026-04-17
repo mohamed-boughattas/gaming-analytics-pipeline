@@ -43,7 +43,7 @@ SAMPLE_GAMES = [
             {"platform": {"name": "PC", "id": 1}},
         ],
         "genres": [
-            {"name": "Action RPG", "id": 4},
+            {"name": "Action", "id": 4},
             {"name": "Adventure", "id": 3},
         ],
         "stores": [
@@ -133,7 +133,7 @@ SAMPLE_GAMES = [
             {"platform": {"name": "PC", "id": 1}},
         ],
         "genres": [
-            {"name": "Action RPG", "id": 4},
+            {"name": "Action", "id": 4},
             {"name": "Shooter", "id": 2},
         ],
         "stores": [
@@ -179,7 +179,7 @@ SAMPLE_GAMES = [
             {"platform": {"name": "Nintendo", "id": 7}},
         ],
         "genres": [
-            {"name": "Roguelike", "id": 15},
+            {"name": "Indie", "id": 15},
             {"name": "Action", "id": 4},
         ],
         "stores": [
@@ -220,8 +220,8 @@ SAMPLE_GAMES = [
             {"platform": {"name": "Nintendo", "id": 7}},
         ],
         "genres": [
-            {"name": "Action-Adventure", "id": 3},
-            {"name": "Open World", "id": 15},
+            {"name": "Adventure", "id": 3},
+            {"name": "Action", "id": 4},
         ],
         "stores": [
             {"store": {"name": "Nintendo Store", "id": 7}},
@@ -240,18 +240,11 @@ SAMPLE_GAMES = [
 
 SAMPLE_GENRES = [
     {
-        "id": 1,
+        "id": 4,
         "name": "Action",
         "slug": "action",
         "games_count": 15000,
         "image_background": "https://example.com/action.jpg",
-    },
-    {
-        "id": 2,
-        "name": "Shooter",
-        "slug": "shooter",
-        "games_count": 8500,
-        "image_background": "https://example.com/shooter.jpg",
     },
     {
         "id": 3,
@@ -261,53 +254,32 @@ SAMPLE_GENRES = [
         "image_background": "https://example.com/adventure.jpg",
     },
     {
-        "id": 4,
+        "id": 5,
         "name": "RPG",
         "slug": "rpg",
         "games_count": 6800,
         "image_background": "https://example.com/rpg.jpg",
     },
     {
-        "id": 5,
+        "id": 2,
+        "name": "Shooter",
+        "slug": "shooter",
+        "games_count": 8500,
+        "image_background": "https://example.com/shooter.jpg",
+    },
+    {
+        "id": 10,
         "name": "Strategy",
         "slug": "strategy",
         "games_count": 4200,
         "image_background": "https://example.com/strategy.jpg",
     },
     {
-        "id": 6,
+        "id": 15,
         "name": "Indie",
         "slug": "indie",
-        "games_count": 9500,
+        "games_count": 7800,
         "image_background": "https://example.com/indie.jpg",
-    },
-    {
-        "id": 7,
-        "name": "Platformer",
-        "slug": "platformer",
-        "games_count": 3800,
-        "image_background": "https://example.com/platformer.jpg",
-    },
-    {
-        "id": 8,
-        "name": "Simulation",
-        "slug": "simulation",
-        "games_count": 5200,
-        "image_background": "https://example.com/simulation.jpg",
-    },
-    {
-        "id": 9,
-        "name": "Sports",
-        "slug": "sports",
-        "games_count": 4800,
-        "image_background": "https://example.com/sports.jpg",
-    },
-    {
-        "id": 10,
-        "name": "Racing",
-        "slug": "racing",
-        "games_count": 2100,
-        "image_background": "https://example.com/racing.jpg",
     },
 ]
 
@@ -399,7 +371,7 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     # Create games table
     con.execute(
         """
-        CREATE TABLE IF NOT EXISTS raw.rawg_games (
+        CREATE TABLE IF NOT EXISTS raw.games (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             released TEXT,
@@ -430,7 +402,7 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     # Create genres table
     con.execute(
         """
-        CREATE TABLE IF NOT EXISTS raw.rawg_genres (
+        CREATE TABLE IF NOT EXISTS raw.genres (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             slug TEXT,
@@ -443,7 +415,7 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     # Create platforms table
     con.execute(
         """
-        CREATE TABLE IF NOT EXISTS raw.rawg_platforms (
+        CREATE TABLE IF NOT EXISTS raw.platforms (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             slug TEXT,
@@ -456,9 +428,9 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     )
 
     # Clear existing data
-    con.execute("DELETE FROM raw.rawg_games")
-    con.execute("DELETE FROM raw.rawg_genres")
-    con.execute("DELETE FROM raw.rawg_platforms")
+    con.execute("DELETE FROM raw.games")
+    con.execute("DELETE FROM raw.genres")
+    con.execute("DELETE FROM raw.platforms")
 
     logger.info("Inserting sample data...")
 
@@ -466,7 +438,7 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     for game in SAMPLE_GAMES:
         con.execute(
             """
-            INSERT INTO raw.rawg_games VALUES (
+            INSERT INTO raw.games VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             """,
@@ -501,7 +473,7 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     for genre in SAMPLE_GENRES:
         con.execute(
             """
-            INSERT INTO raw.rawg_genres VALUES (?, ?, ?, ?, ?)
+            INSERT INTO raw.genres VALUES (?, ?, ?, ?, ?)
             """,
             (
                 genre["id"],
@@ -516,7 +488,7 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
     for platform in SAMPLE_PLATFORMS:
         con.execute(
             """
-            INSERT INTO raw.rawg_platforms VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO raw.platforms VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 platform["id"],
@@ -530,9 +502,9 @@ def seed_database(db_path: str | Path | None = None) -> dict[str, int]:
         )
 
     # Get counts
-    games_result = con.execute("SELECT COUNT(*) FROM raw.rawg_games").fetchone()
-    genres_result = con.execute("SELECT COUNT(*) FROM raw.rawg_genres").fetchone()
-    platforms_result = con.execute("SELECT COUNT(*) FROM raw.rawg_platforms").fetchone()
+    games_result = con.execute("SELECT COUNT(*) FROM raw.games").fetchone()
+    genres_result = con.execute("SELECT COUNT(*) FROM raw.genres").fetchone()
+    platforms_result = con.execute("SELECT COUNT(*) FROM raw.platforms").fetchone()
 
     games_count = games_result[0] if games_result else 0
     genres_count = genres_result[0] if genres_result else 0

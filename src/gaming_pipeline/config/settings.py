@@ -2,12 +2,15 @@
 
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+load_dotenv(Path(".env"))
+
 
 class DatabaseConfig(BaseSettings):
-    """Database configuration."""
+    """Database configuration using local DuckDB."""
 
     model_config = SettingsConfigDict(
         env_prefix="DB_",
@@ -15,15 +18,15 @@ class DatabaseConfig(BaseSettings):
         env_file=None,
     )
 
-    type: str = "duckdb"
     path: str = "data/gaming_analytics.duckdb"
-    connection_string: str | None = None
 
     @property
     def connection_uri(self) -> str:
-        """Get connection URI for DuckDB."""
-        if self.connection_string:
-            return self.connection_string
+        """Get connection URI for DuckDB.
+
+        Returns:
+            A duckdb:/// connection URI string.
+        """
         return f"duckdb:///{self.path}"
 
 
@@ -33,24 +36,19 @@ class APIConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="RAWG_",
         extra="ignore",
-        env_file=None,
     )
 
-    api_key: str | None = Field(default=None, alias="API_KEY")
+    api_key: str | None = Field(default=None)
     base_url: str = "https://api.rawg.io/api"
 
     @property
     def rawg_api_key(self) -> str | None:
-        """Get RAWG API key."""
-        return self.api_key
+        """Get RAWG API key.
 
-    @property
-    def rawg_headers(self) -> dict:
-        """Get RAWG API headers."""
-        headers = {"Accept": "application/json"}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-        return headers
+        Returns:
+            The configured RAWG API key or None.
+        """
+        return self.api_key
 
 
 class PipelineConfig(BaseSettings):
@@ -79,7 +77,6 @@ class SodaConfig(BaseSettings):
     )
 
     checks_path: str = "src/gaming_pipeline/quality/checks"
-    configuration_file: str = "src/gaming_pipeline/quality/configuration.yml"
 
 
 class Settings(BaseSettings):
@@ -92,33 +89,45 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Environment
     environment: str = "development"
 
-    # Component configs
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     api: APIConfig = Field(default_factory=APIConfig)
     pipeline: PipelineConfig = Field(default_factory=PipelineConfig)
     soda: SodaConfig = Field(default_factory=SodaConfig)
 
-    # Additional environment variables (for compatibility)
-    database_path: str | None = Field(default=None, alias="DATABASE_PATH")
-    prefect_api_url: str | None = Field(default=None, alias="PREFECT_API_URL")
-
     @property
     def is_production(self) -> bool:
-        """Check if running in production environment."""
+        """Check if running in production environment.
+
+        Returns:
+            True if environment is production.
+        """
         return self.environment.lower() == "production"
 
     @property
     def is_development(self) -> bool:
-        """Check if running in development environment."""
+        """Check if running in development environment.
+
+        Returns:
+            True if environment is development.
+        """
         return self.environment.lower() == "development"
 
     @field_validator("environment")
     @classmethod
     def validate_environment(cls, v: str) -> str:
-        """Validate environment value."""
+        """Validate environment value.
+
+        Args:
+            v: The environment value to validate.
+
+        Returns:
+            The validated lowercase environment string.
+
+        Raises:
+            ValueError: If environment is not one of development, production, or test.
+        """
         allowed = ["development", "production", "test"]
         v_lower = v.lower()
         if v_lower not in allowed:
@@ -126,5 +135,4 @@ class Settings(BaseSettings):
         return v_lower
 
 
-# Global settings instance
-settings = Settings()
+settings: Settings = Settings()

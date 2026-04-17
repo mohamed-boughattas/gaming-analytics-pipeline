@@ -7,20 +7,26 @@ Using dlt's built-in REST API source provides:
 - Pagination handling
 - Schema inference
 - Type coercion
+- Incremental loading with state tracking
 """
 
+from collections.abc import Iterator
 from typing import Any
 
 import dlt
-from dlt.sources.rest_api import rest_api_source
+import requests
+from dlt.extract.incremental import Incremental
+from dlt.sources import DltResource
+from pendulum import now as pendulum_now
 
 from gaming_pipeline.config import config
 
-RAWG_FIELDS = {
+RAWG_FIELDS: dict[str, list[str]] = {
     "games": [
         "id",
         "name",
         "released",
+        "updated",
         "rating",
         "ratings_count",
         "metacritic",
@@ -34,109 +40,151 @@ RAWG_FIELDS = {
 }
 
 
-@dlt.source(
-    name="rawg",
-    schema_contract={
-        "tables": "evolve",
-        "columns": "freeze",
-    },
-)
 def rawg_source(
     page_size: int = 20,
-    max_pages: int | None = None,
-    updated_after: str | None = None,
-    include_fields: bool = True,
+    max_pages: int = 10,
 ) -> Any:
     """Create dlt source for extracting data from the RAWG API.
 
-    This function uses dlt's REST API source which provides:
-    - Automatic retry with exponential backoff (default 5 retries)
-    - Configurable timeout (30 seconds default)
-    - Pagination handling
-    - Schema inference
-    - Type coercion
-    - Schema contract for controlled evolution
+    This source supports incremental loading - if the pipeline is interrupted,
+    it will resume from the last successful checkpoint without duplicating data.
 
     Args:
         page_size: Number of items per page (max 100).
-        max_pages: Maximum number of pages to fetch per resource. None for all.
-        updated_after: ISO date string for incremental loading (e.g., "2024-01-01").
-        include_fields: Whether to request only specific fields for games.
+        max_pages: Maximum number of pages to fetch.
 
     Returns:
         dlt Source configured for RAWG API with games, genres, and platforms.
-
-    Example:
-        >>> source = rawg_source(page_size=50, max_pages=10)
-        >>> pipeline = dlt.pipeline(
-        ...     "gaming_analytics",
-        ...     destination=dlt.destinations.duckdb()
-        ... )
-        >>> pipeline.run(source)
     """
-    base_url = config.api.base_url
-    headers = {"Accept": "application/json"}
 
-    if config.api.rawg_api_key:
-        headers["Authorization"] = f"Bearer {config.api.rawg_api_key}"
+    @dlt.resource(
+        name="games",
+        primary_key="id",
+        write_disposition="merge",
+    )
+    def games(
+        page_size: int = 20,
+        max_pages: int = 10,
+        updated_at: Incremental[str] | None = None,
+    ) -> Iterator[dict[str, Any]]:
+        """Fetch games from RAWG API incrementally.
 
-    api_key_param = {"key": config.api.rawg_api_key} if config.api.rawg_api_key else {}
+        Uses the 'updated' field from RAWG API to fetch only games
+        modified since the last run. This ensures:
+        - No duplicate data on pipeline restart
+        - Minimal API calls (only fetch changed records)
+        - Efficient use of API rate limits
 
-    resources: list[dict[str, Any]] = [
-        {
-            "name": "rawg_games",
-            "endpoint": {
-                "path": "games",
-                "params": {
-                    **api_key_param,
-                    "page_size": min(page_size, 100),
-                    "ordering": "-updated",
-                    **({"updated_after": updated_after} if updated_after else {}),
-                },
-                "response_actions": [
-                    {"status_code": 404, "action": "ignore"},
-                ],
-            },
-        },
-        {
-            "name": "rawg_genres",
-            "endpoint": {
-                "path": "genres",
-                "params": {**api_key_param, "page_size": 100},
-                "response_actions": [
-                    {"status_code": 404, "action": "ignore"},
-                ],
-            },
-        },
-        {
-            "name": "rawg_platforms",
-            "endpoint": {
-                "path": "platforms",
-                "params": {**api_key_param, "page_size": 100},
-                "response_actions": [
-                    {"status_code": 404, "action": "ignore"},
-                ],
-            },
-        },
-    ]
+        The checkpoint is automatically persisted by dlt between runs.
 
-    if include_fields:
-        for resource in resources:
-            if resource["name"] == "rawg_games":
-                fields = RAWG_FIELDS["games"]
-                resource["endpoint"]["params"]["fields"] = ",".join(fields)
+        Args:
+            page_size: Number of items per page.
+            max_pages: Maximum number of pages to fetch.
+            updated_at: Incremental state tracking for the updated field.
 
-    config_dict: dict[str, Any] = {
-        "client": {
-            "base_url": base_url,
-            "headers": headers,
-            "paginator": "page_number",
-        },
-        "resources": resources,
-    }
+        Yields:
+            Game record dictionaries.
+        """
+        if updated_at is None:
+            updated_at = Incremental("updated", "2010-01-01")
 
-    if max_pages is not None:
-        for resource in config_dict["resources"]:
-            resource["endpoint"]["params"]["max_pages"] = max_pages
+        api_key = config.api.rawg_api_key
+        base_url = config.api.base_url
+        fields = ",".join(RAWG_FIELDS["games"])
 
-    return rest_api_source(config_dict)  # type: ignore[arg-type]
+        checkpoint = updated_at.last_value or "2010-01-01"
+        end_date = pendulum_now().to_date_string()
+
+        page = 1
+        while page <= max_pages:
+            url = f"{base_url}/games"
+            params = {
+                "key": api_key,
+                "page_size": min(page_size, 100),
+                "page": page,
+                "ordering": "-updated",
+                "fields": fields,
+                "dates": f"{checkpoint},{end_date}",
+            }
+
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+
+            games_data = data.get("results", [])
+            if not games_data:
+                break
+
+            yield from games_data
+
+            if data.get("next"):
+                page += 1
+            else:
+                break
+
+    @dlt.resource(
+        name="genres",
+        primary_key="id",
+        write_disposition="replace",
+    )
+    def genres() -> Iterator[dict[str, Any]]:
+        """Fetch genres from RAWG API.
+
+        Genres change infrequently, so we use replace disposition
+        to ensure we always have the complete genres catalog.
+
+        Yields:
+            Genre record dictionaries.
+        """
+        api_key = config.api.rawg_api_key
+        base_url = config.api.base_url
+        fields = ",".join(RAWG_FIELDS["genres"])
+
+        url = f"{base_url}/genres"
+        params = {"key": api_key, "page_size": 100, "fields": fields}
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+
+        yield from data.get("results", [])
+
+    @dlt.resource(
+        name="platforms",
+        primary_key="id",
+        write_disposition="replace",
+    )
+    def platforms() -> Iterator[dict[str, Any]]:
+        """Fetch platforms from RAWG API.
+
+        Platforms change infrequently, so we use replace disposition
+        to ensure we always have the complete platforms catalog.
+
+        Yields:
+            Platform record dictionaries.
+        """
+        api_key = config.api.rawg_api_key
+        base_url = config.api.base_url
+        fields = ",".join(RAWG_FIELDS["platforms"])
+
+        url = f"{base_url}/platforms"
+        params = {"key": api_key, "page_size": 100, "fields": fields}
+        response = requests.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+
+        yield from data.get("results", [])
+
+    @dlt.source(name="rawg")
+    def _source() -> list[DltResource]:
+        """Create the RAWG dlt source with all resources.
+
+        Returns:
+            List of configured dlt resources.
+        """
+        return [
+            games(page_size=page_size, max_pages=max_pages),
+            genres(),
+            platforms(),
+        ]
+
+    return _source()

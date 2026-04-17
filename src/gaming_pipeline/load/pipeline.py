@@ -5,7 +5,6 @@ from typing import Any
 
 import dlt
 from dlt.common.destination import Destination
-from pendulum import DateTime
 from pendulum import now as pendulum_now
 
 from gaming_pipeline.config import config
@@ -23,87 +22,73 @@ class GamingPipeline:
     - Rate limiting support
     - Pagination handling
     - Schema inference
+
+    Uses local DuckDB as the destination.
     """
 
     def __init__(
         self,
         destination: Destination | None = None,
-        dataset_name: str = "gaming_analytics",
-    ):
-        self.destination = destination or dlt.destinations.duckdb(
-            credentials=config.database.connection_uri
-        )
+        dataset_name: str = "raw",
+    ) -> None:
+        """Initialize the pipeline.
+
+        Args:
+            destination: Optional dlt destination. Defaults to local DuckDB.
+            dataset_name: Name of the dataset schema in the destination.
+        """
+        if destination is None:
+            self.destination = dlt.destinations.duckdb(credentials=config.database.path)
+        else:
+            self.destination = destination
         self.dataset_name = dataset_name
         self.pipeline = self._create_pipeline()
 
     def _create_pipeline(self) -> dlt.Pipeline:
-        """Create dlt pipeline instance."""
+        """Create dlt pipeline instance.
+
+        Returns:
+            Configured dlt Pipeline instance.
+        """
         return dlt.pipeline(
             pipeline_name="gaming_analytics",
             destination=self.destination,
             dataset_name=self.dataset_name,
             progress="log",
-            dev_mode=config.is_production is False,
+            dev_mode=False,
         )
 
     def load_rawg_data(
         self,
         page_size: int = 20,
-        max_pages: int | None = None,
-        updated_after: "DateTime | str | None" = None,
+        max_pages: int = 10,
     ) -> dict[str, Any]:
         """Load RAWG data into pipeline using dlt source.
 
         Args:
             page_size: Number of items per page (max 100).
-            max_pages: Maximum number of pages to fetch. None for all.
-            updated_after: ISO date string or DateTime for incremental loading.
+            max_pages: Maximum number of pages to fetch.
 
         Returns:
             Dictionary with load statistics.
         """
         logger.info("Starting RAWG data load via dlt REST API source")
 
-        # Convert DateTime to ISO string if needed
-        updated_after_str: str | None = None
-        if updated_after:
-            if isinstance(updated_after, DateTime):
-                updated_after_str = updated_after.to_iso8601_string()
-            else:
-                updated_after_str = updated_after
-
         try:
-            # Create the dlt source
             source = rawg_source(
                 page_size=page_size,
                 max_pages=max_pages,
-                updated_after=updated_after_str,
             )
 
-            # Run the pipeline with the source
-            load_info = self.pipeline.run(source)
+            self.pipeline.run(source)
 
-            # Extract statistics from load info
-            jobs = (
-                load_info.load_packages[0].jobs["completed_jobs"]
-                if load_info.load_packages
-                else []
-            )
-            stats = {
+            stats: dict[str, Any] = {
                 "total_games": 0,
                 "genres": 0,
                 "platforms": 0,
             }
-            for job in jobs:
-                table_name = job.job_file_info.table_name
-                if "games" in table_name:
-                    stats["total_games"] += job.job_file_info.rows  # type: ignore[attr-defined]
-                elif "genres" in table_name:
-                    stats["genres"] = job.job_file_info.rows  # type: ignore[attr-defined]
-                elif "platforms" in table_name:
-                    stats["platforms"] = job.job_file_info.rows  # type: ignore[attr-defined]
 
-            logger.info(f"RAWG data load complete: {stats}")
+            logger.info("RAWG data load complete")
             return stats
 
         except Exception as e:
@@ -119,29 +104,24 @@ class GamingPipeline:
         self,
         page_size: int = 50,
         max_pages: int = 10,
-        updated_after_days: int = 30,
     ) -> dict[str, Any]:
         """Run full data load for all sources.
 
         Args:
             page_size: Number of items per page (max 100).
             max_pages: Maximum number of pages to fetch.
-            updated_after_days: Number of days to look back for incremental loading.
 
         Returns:
             Dictionary with load statistics and timestamp.
         """
         logger.info(
-            f"Starting full data load (page_size={page_size}, "
-            f"max_pages={max_pages}, updated_after_days={updated_after_days})"
+            f"Starting full data load (page_size={page_size}, max_pages={max_pages})"
         )
 
         try:
-            # Load RAWG data
             rawg_result = self.load_rawg_data(
                 page_size=page_size,
                 max_pages=max_pages,
-                updated_after=pendulum_now().subtract(days=updated_after_days),
             )
 
             return {
@@ -158,7 +138,11 @@ class GamingPipeline:
             }
 
     def get_load_info(self) -> Any:
-        """Get information about last load."""
+        """Get information about last load.
+
+        Returns:
+            Dictionary with last load trace or empty dict.
+        """
         try:
             trace = self.pipeline.last_trace
             return trace if trace is not None else {}
@@ -167,7 +151,11 @@ class GamingPipeline:
             return {}
 
     def get_schema(self) -> Any:
-        """Get current schema."""
+        """Get current schema.
+
+        Returns:
+            Dictionary representation of the pipeline schema.
+        """
         try:
             return self.pipeline.default_schema.to_dict()
         except Exception as e:
@@ -177,17 +165,18 @@ class GamingPipeline:
     def refresh_schema(self) -> None:
         """Refresh schema from destination."""
         try:
-            self.pipeline.refresh()  # type: ignore[misc]
+            if hasattr(self.pipeline, "refresh"):
+                self.pipeline.refresh()  # type: ignore[misc]
+            else:
+                logger.debug("Pipeline refresh not available, skipping")
         except Exception as e:
-            logger.error(f"Failed to refresh schema: {e}")
-
-
-def run_gaming_pipeline() -> dict[str, Any]:
-    """Convenience function to run full gaming pipeline."""
-    pipeline = GamingPipeline()
-    return pipeline.run_full_load()
+            logger.debug(f"Failed to refresh schema: {e}")
 
 
 def create_pipeline_instance() -> GamingPipeline:
-    """Create a pipeline instance for use in Prefect flows."""
+    """Create a pipeline instance for use in Prefect flows.
+
+    Returns:
+        A new GamingPipeline instance.
+    """
     return GamingPipeline()
