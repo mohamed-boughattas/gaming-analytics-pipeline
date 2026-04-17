@@ -72,9 +72,6 @@ target/
 profile_default/
 ipython_config.py
 
-# pyenv
-.python-version
-
 # celery beat schedule file
 celerybeat-schedule
 
@@ -149,10 +146,14 @@ soda_*.log
 # Detect-secrets
 .secrets.baseline
 
-# Rill
-rill/tmp/
-rill.archive/
-Dockerfile.rill.archive
+# Evidence
+evidence/node_modules/
+evidence/build/
+evidence/.evidence/
+# But track package files (blocked by *.json above)
+!evidence/package.json
+!evidence/package-lock.json
+
 
 # SQLMesh
 sqlmesh/logs/

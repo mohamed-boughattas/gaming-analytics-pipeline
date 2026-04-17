@@ -12,7 +12,7 @@ dependencies = [
     "pydantic>=2.11.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv>=1.0.0",
-    "duckdb>=1.4.0",
+    "duckdb>=1.4.0,<1.5.0",
     "click>=8.1.0",
     "rich>=13.0.0",
     "pendulum>=3.0.0",
@@ -20,10 +20,12 @@ dependencies = [
     "plotly>=6.6.0",
     "websockets>=14.2.0",
     "soda-duckdb>=4.1.1",
+    "tenacity>=8.0.0",
 ]
 
 [tool.uv]
 resolution = "highest"
+override-dependencies = ["urllib3>=2.6.3"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gaming_pipeline"]
@@ -38,10 +40,8 @@ dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
-    "pre-commit>=3.6.0",
     "ty>=0.0.20",
     "sqlfluff>=3.0.0",
-    "detect-secrets>=1.5.0",
     "yamllint>=1.35.0",
     "chardet<6.0.0",
 ]
