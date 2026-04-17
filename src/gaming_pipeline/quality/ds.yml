@@ -1,4 +1,0 @@
-type: duckdb
-name: gaming_analytics
-connection:
-  database: data/gaming_analytics.duckdb
