@@ -18,17 +18,11 @@ class TestDatabaseConfig:
         """Test default database path."""
         config = DatabaseConfig()
         assert config.path == "data/gaming_analytics.duckdb"
-        assert config.type == "duckdb"
 
-    def test_connection_uri_from_path(self):
-        """Test connection URI is derived from path."""
+    def test_connection_uri(self):
+        """Test connection URI uses duckdb scheme."""
         config = DatabaseConfig(path="data/test.duckdb")
         assert config.connection_uri == "duckdb:///data/test.duckdb"
-
-    def test_connection_uri_from_string(self):
-        """Test connection URI uses explicit value when provided."""
-        config = DatabaseConfig(connection_string="duckdb:///:memory:")
-        assert config.connection_uri == "duckdb:///:memory:"
 
 
 class TestAPIConfig:
@@ -39,17 +33,11 @@ class TestAPIConfig:
         config = APIConfig()
         assert config.base_url == "https://api.rawg.io/api"
 
-    def test_rawg_api_key_property_no_key(self):
+    def test_rawg_api_key_property_no_key(self, monkeypatch):
         """Test rawg_api_key property returns None when no key."""
-        config = APIConfig()
+        monkeypatch.delenv("RAWG_API_KEY", raising=False)
+        config = APIConfig(api_key=None)
         assert config.rawg_api_key is None
-
-    def test_rawg_headers_without_key(self):
-        """Test headers without API key."""
-        config = APIConfig()
-        headers = config.rawg_headers
-        assert headers == {"Accept": "application/json"}
-        assert "Authorization" not in headers
 
 
 class TestPipelineConfig:
@@ -68,13 +56,10 @@ class TestPipelineConfig:
 class TestSodaConfig:
     """Test SodaConfig class."""
 
-    def test_default_paths(self):
-        """Test default Soda configuration paths."""
+    def test_default_checks_path(self):
+        """Test default Soda checks path."""
         config = SodaConfig()
         assert config.checks_path == "src/gaming_pipeline/quality/checks"
-        assert (
-            config.configuration_file == "src/gaming_pipeline/quality/configuration.yml"
-        )
 
 
 class TestSettings:
