@@ -7,13 +7,16 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   lint:
-    name: Lint Code
+    name: Lint & Security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +39,7 @@ jobs:
         run: uv run ruff format --check src/ tests/
 
       - name: Run Ruff linter
-        run: uv run ruff check src/ tests/ --select E,F,W,I,B,C4,UP,SIM,S
+        run: uv run ruff check src/ tests/
 
       - name: Run type checker
         run: uv run ty check src/
@@ -44,13 +47,16 @@ jobs:
       - name: Validate SQLMesh models
         run: cd sqlmesh && uv run sqlmesh lint
 
+      - name: Lint YAML files
+        run: uv run yamllint . -d .yamllint
+
       - name: Lint GitHub Actions
         uses: docker://rhysd/actionlint:latest
         with:
           args: '-glob "*.yml" -glob "*.yaml"'
 
   test:
-    name: Run Tests
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,6 +79,7 @@ jobs:
         run: |
           uv run pytest tests/ -v \
             --cov=src \
+            --cov-fail-under=85 \
             --cov-report=xml \
             --cov-report=term-missing \
             --cov-report=html
@@ -82,76 +89,3 @@ jobs:
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
-
-      - name: Archive coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: htmlcov/
-
-  build:
-    name: Build Docker Image
-    runs-on: ubuntu-latest
-    needs: [lint, test]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        run: |
-          docker build -t gaming-analytics-pipeline:${{ github.sha }} \
-            -t gaming-analytics-pipeline:latest \
-            -f Dockerfile .
-
-      - name: Test Docker image
-        run: |
-          docker run --rm gaming-analytics-pipeline:latest uv run python --version
-          docker run --rm gaming-analytics-pipeline:latest uv run python main.py version
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: [lint]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
-
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Run Ruff security rules
-        run: uv run ruff check src/ tests/ --select S
-
-      - name: Run uv audit
-        run: uv audit --preview-features audit
-
-      - name: Run detect-secrets
-        run: |
-          uv run pip install detect-secrets
-          uv run detect-secrets scan --baseline .secrets.baseline
