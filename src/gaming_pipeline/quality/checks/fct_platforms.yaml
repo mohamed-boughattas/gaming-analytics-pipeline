@@ -1,0 +1,41 @@
+# Soda v4 contract for marts.fct_platforms table
+
+dataset: gaming_analytics/marts/fct_platforms
+
+columns:
+  - name: id
+    checks:
+      - missing:
+      - duplicate:
+
+  - name: name
+    checks:
+      - missing:
+
+  - name: slug
+
+  - name: api_games_count
+
+  - name: year_start
+
+  - name: total_games
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: avg_rating
+
+  - name: total_ratings
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: avg_playtime
+    checks:
+      - invalid:
+          valid_min: 0
+
+checks:
+  - row_count:
+      name: Platforms mart has data
+      must_be_greater_than: 0

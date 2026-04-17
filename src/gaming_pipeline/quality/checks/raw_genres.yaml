@@ -1,0 +1,34 @@
+# Soda v4 contract for raw.genres table
+# Data quality checks for raw genres data from RAWG API
+
+dataset: gaming_analytics/raw/genres
+
+columns:
+  - name: id
+    checks:
+      - missing:
+      - duplicate:
+
+  - name: name
+    checks:
+      - missing:
+
+  - name: slug
+    checks:
+      - missing:
+      - invalid:
+          valid_format:
+            name: Slug format (lowercase hyphens)
+            regex: "^[a-z0-9]+(-[a-z0-9]+)*$"
+
+  - name: games_count
+
+checks:
+  - row_count:
+      name: Genres table has data
+      must_be_greater_than: 0
+
+  - row_count:
+      qualifier: volume_check
+      name: Reasonable genre count
+      must_be_less_than: 100

@@ -1,0 +1,65 @@
+# Soda v4 contract for marts.fct_games table
+
+dataset: gaming_analytics/marts/fct_games
+
+columns:
+  - name: id
+    checks:
+      - missing:
+      - duplicate:
+
+  - name: name
+    checks:
+      - missing:
+
+  - name: released
+
+  - name: rating
+    checks:
+      - missing:
+          threshold:
+            metric: percent
+            must_be_less_than: 50
+
+  - name: rating_top
+    checks:
+      - invalid:
+          valid_max: 5
+
+  - name: ratings_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: reviews_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: added
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: playtime
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: suggestions_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: rating_category
+
+  - name: release_year
+
+  - name: release_month
+
+  - name: engagement_score
+
+checks:
+  - row_count:
+      name: Games mart has data
+      must_be_greater_than: 0

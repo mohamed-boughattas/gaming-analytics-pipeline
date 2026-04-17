@@ -1,0 +1,32 @@
+# Soda v4 contract for raw.platforms table
+# Data quality checks for raw platforms data from RAWG API
+
+dataset: gaming_analytics/raw/platforms
+
+columns:
+  - name: id
+    checks:
+      - missing:
+      - duplicate:
+
+  - name: name
+    checks:
+      - missing:
+
+  - name: slug
+    checks:
+      - missing:
+
+  - name: games_count
+
+  - name: year_start
+
+checks:
+  - row_count:
+      name: Platforms table has data
+      must_be_greater_than: 0
+
+  - row_count:
+      qualifier: volume_check
+      name: Reasonable platform count
+      must_be_less_than: 200
