@@ -15,8 +15,8 @@ from typing import Any
 
 import dlt
 import requests
-from dlt.extract.incremental import Incremental
 from dlt.sources import DltResource
+from dlt.sources import incremental as dlt_incremental
 from pendulum import now as pendulum_now
 
 from gaming_pipeline.config import config
@@ -61,11 +61,25 @@ def rawg_source(
         name="games",
         primary_key="id",
         write_disposition="merge",
+        columns={
+            "added_by_status": {"data_type": "text"},
+            "clip": {"data_type": "text"},
+            "esrb_rating": {"data_type": "text"},
+            "metacritic": {"data_type": "bigint"},
+            "platforms": {"data_type": "text"},
+            "score": {"data_type": "double"},
+            "short_screenshots": {"data_type": "text"},
+            "stores": {"data_type": "text"},
+            "tags": {"data_type": "text"},
+            "user_game": {"data_type": "text"},
+        },
     )
     def games(
         page_size: int = 20,
         max_pages: int = 10,
-        updated_at: Incremental[str] | None = None,
+        updated_at: dlt_incremental[str] = dlt_incremental(  # noqa: B008
+            "updated", initial_value="2026-01-01"
+        ),
     ) -> Iterator[dict[str, Any]]:
         """Fetch games from RAWG API incrementally.
 
@@ -85,14 +99,11 @@ def rawg_source(
         Yields:
             Game record dictionaries.
         """
-        if updated_at is None:
-            updated_at = Incremental("updated", "2010-01-01")
-
         api_key = config.api.rawg_api_key
         base_url = config.api.base_url
         fields = ",".join(RAWG_FIELDS["games"])
 
-        checkpoint = updated_at.last_value or "2010-01-01"
+        checkpoint = updated_at.last_value or "2026-01-01"
         end_date = pendulum_now().to_date_string()
 
         page = 1
@@ -152,6 +163,10 @@ def rawg_source(
         name="platforms",
         primary_key="id",
         write_disposition="replace",
+        columns={
+            "image": {"data_type": "text"},
+            "year_end": {"data_type": "bigint"},
+        },
     )
     def platforms() -> Iterator[dict[str, Any]]:
         """Fetch platforms from RAWG API.
