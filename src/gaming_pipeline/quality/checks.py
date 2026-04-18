@@ -242,14 +242,3 @@ def run_quality_checks(layer: str = "marts") -> dict[str, Any]:
         "soda_status": soda_status,
         "overall_status": overall,
     }
-
-
-if __name__ == "__main__":
-    result = run_quality_checks()
-    print(f"Overall: {result['overall_status']}")
-    sm = result["sqlmesh"]
-    print(
-        f"SQLMesh: {result['sqlmesh_status']} "
-        f"({sm.get('passed_tests', 0)}/{sm.get('total_tests', 0)} tests)"
-    )
-    print(f"Soda: {result['soda_status']}")
