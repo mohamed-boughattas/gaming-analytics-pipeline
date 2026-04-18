@@ -3,18 +3,6 @@ import marimo
 __generated_with = "0.15.1"
 app = marimo.App(width="full")
 
-_connection = None
-
-
-def get_connection():
-    """Get or create a singleton DuckDB connection."""
-    global _connection
-    if _connection is None:
-        import duckdb
-
-        _connection = duckdb.connect("data/gaming_analytics.duckdb", read_only=True)
-    return _connection
-
 
 @app.cell
 def _():
@@ -28,10 +16,11 @@ def _():
 def _():
     import pandas as pd
     import plotly.express as px
+    import duckdb
 
     from gaming_pipeline.config import settings
 
-    con = get_connection()
+    con = duckdb.connect("data/gaming_analytics.duckdb", read_only=True)
     return con, pd, px
 
 
@@ -62,7 +51,7 @@ def _(con, mo):
 
 @app.cell
 def _(con, mo):
-    games_df = con.execute(
+    genres_df = con.execute(
         """
         SELECT
             id as genre_id,
