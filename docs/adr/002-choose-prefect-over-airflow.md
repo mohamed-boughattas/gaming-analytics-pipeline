@@ -40,7 +40,7 @@ While Airflow is industry-standard, for this project:
 - DAG files can become complex and hard to maintain
 - Less intuitive for async workflows
 - Heavier resource requirements
-- More operational overhead for a demo/portfolio project
+- More operational overhead for a portfolio project
 
 ### Specific Use Case Considerations
 
@@ -49,7 +49,7 @@ For a gaming analytics portfolio project:
 - Prefect's code-first approach is more demonstrable
 - Easier to understand for hiring managers reviewing the code
 - Better alignment with modern Python data engineering practices
-- Simpler to set up and demo
+- Simpler to set up and demonstrate
 
 ## Consequences
 

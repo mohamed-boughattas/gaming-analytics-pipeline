@@ -10,6 +10,10 @@ graph LR
     B --> C[raw.games]
     B --> D[raw.genres]
     B --> E[raw.platforms]
+    C --> C1[raw.games__genres]
+    C --> C2[raw.games__platforms]
+    C1 --> F1[fct_genres]
+    C2 --> F2[fct_platforms]
 
     C --> F[staging.stg_games]
     D --> G[staging.stg_genres]
@@ -29,9 +33,13 @@ graph LR
     style A fill:#f9f,stroke:#333
     style B fill:#bbf,stroke:#333
     style C fill:#9ff,stroke:#333
+    style C1 fill:#9ff,stroke:#333
+    style C2 fill:#9ff,stroke:#333
     style D fill:#9ff,stroke:#333
     style E fill:#9ff,stroke:#333
     style F fill:#fbf,stroke:#333
+    style F1 fill:#bfb,stroke:#333
+    style F2 fill:#bfb,stroke:#333
     style G fill:#fbf,stroke:#333
     style H fill:#fbf,stroke:#333
     style I fill:#bfb,stroke:#333
@@ -58,11 +66,13 @@ The pipeline ingests data from external APIs:
 - Extracts data from RAWG API in batches
 - Handles schema inference automatically
 - Supports both full and incremental loads
-- Stores data in DuckDB with JSON fields preserved
+- Stores data in DuckDB, normalizing nested JSON into child tables linked via `_dlt_id`
 
 **Tables**:
 
-- `raw.games` - Raw game data with nested JSON arrays (genres, platforms)
+- `raw.games` - Raw game data (genres/platforms normalized into child tables by dlt)
+- `raw.games__genres` - Genre links per game (via `_dlt_root_id`)
+- `raw.games__platforms` - Platform links per game (via `_dlt_root_id`)
 - `raw.genres` - Genre metadata
 - `raw.platforms` - Platform metadata
 
@@ -74,13 +84,13 @@ Performs light transformations to prepare data for business logic:
 
 **Transformations**:
 
-- Type casting (e.g., strings to dates, JSON to arrays)
+- Type casting (e.g., strings to dates, strings to numbers)
 - NULL value handling with `TRY_CAST`
 - Column naming standardization
 
 **Tables**:
 
-- `staging.stg_games` - Cleaned game data (also preserves `genres` and `platforms` JSON columns)
+- `staging.stg_games` - Cleaned game data (exposes `_dlt_id` for joining child tables)
 - `staging.stg_genres` - Cleaned genre data
 - `staging.stg_platforms` - Cleaned platform data
 
@@ -146,7 +156,7 @@ flowchart TD
 
 | Stage     | Table                | Key Transformations                                      |
 | --------- | -------------------- | ------------------------------------------------------- |
-| Ingestion | raw.games            | Schema inference, JSON preservation                      |
+| Ingestion | raw.games            | Schema inference, nested JSON normalization into child tables        |
 | Staging   | staging.stg_games    | `TRY_CAST` for dates/numbers, NULL handling             |
 | Mart      | marts.fct_games      | Rating categories, engagement score, date extraction     |
 
@@ -163,11 +173,11 @@ COALESCE(rating, 0) * 0.4 + COALESCE(ratings_count, 0) / 100.0 * 0.6 AS engageme
 
 ### Genres/Platforms Aggregations
 
-`marts.fct_genres` and `marts.fct_platforms` use DuckDB's `json_each` to explode the JSON arrays from `raw.games`, then aggregate by genre/platform name:
+`marts.fct_genres` and `marts.fct_platforms` use JOINs to dlt's normalized child tables (`raw.games__genres`, `raw.games__platforms`) linked via `_dlt_root_id` and `_dlt_id`:
 
 ```sql
-CROSS JOIN LATERAL json_each(gm_inner.genres) AS je
-WHERE je.value->>'name' = g.name
+FROM raw.games__genres gg
+JOIN raw.games gm ON gg._dlt_root_id = gm._dlt_id
 ```
 
 ## Refresh Strategy

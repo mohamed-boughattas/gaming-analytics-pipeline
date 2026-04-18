@@ -26,7 +26,7 @@ just soda-scan     # uv run python -m gaming_pipeline.quality.checks
 
 ## CI Order
 
-`just lint-full` runs: format → lint → typecheck → sqlmesh-lint → lint-yaml
+`just lint-full` runs: format → lint → lint-security → typecheck → sqlmesh-lint → lint-yaml
 
 CI has 2 jobs: `lint` (lint + typecheck + sqlmesh-lint) and `test`.
 
@@ -43,7 +43,6 @@ Package: src/gaming_pipeline/
   load/      # dlt pipeline wrapper
   orchestrate/  # Prefect flows + tasks
   quality/    # Soda checks (checks.py) + contract YAML files
-  demo/       # seed_database.py (demo mode without API key)
   (no transform/ — SQLMesh called directly via subprocess)
 ```
 

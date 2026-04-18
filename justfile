@@ -28,6 +28,21 @@ format:
     @echo "Formatting code..."
     uv run ruff format src/ tests/
 
+# Type checking
+typecheck:
+    @echo "Running type checker..."
+    uv run ty check src/
+
+# Lint YAML files
+lint-yaml:
+    @echo "Linting YAML files..."
+    uv run yamllint . -d .yamllint
+
+# Run security checks
+lint-security:
+    @echo "Running security checks..."
+    uv run ruff check src/ tests/ --select S
+
 # Run tests (no coverage — fast)
 test:
     @echo "Running tests..."
@@ -43,24 +58,10 @@ lint-full:
     @echo "Running full CI locally..."
     @just format
     @just lint
+    @just lint-security
     @just typecheck
     @just sqlmesh-lint
     @just lint-yaml
-
-# Lint YAML files
-lint-yaml:
-    @echo "Linting YAML files..."
-    uv run yamllint . -d .yamllint
-
-# Run security checks
-lint-security:
-    @echo "Running security checks..."
-    uv run ruff check src/ tests/ --select S
-
-# Type checking
-typecheck:
-    @echo "Running type checker..."
-    uv run ty check src/
 
 # ============================================================================
 # Pipeline
@@ -98,19 +99,20 @@ marimo:
 
 # Start Evidence dashboard (Node 22 required)
 evidence:
-    cd evidence && fnm use 22 && npm run dev
+    cd evidence && eval "$(fnm env)" && fnm use 22 && npm run dev
 
 # ============================================================================
 # Database
 # ============================================================================
 
-# Reset database (WARNING: deletes all data)
+# Reset database and SQLMesh state (WARNING: deletes all data)
 db-reset:
     @echo "⚠️  This will delete the DuckDB database and all data!"
     @echo "Type 'yes' to confirm or anything else to cancel:"
     @read -r confirm && [ "$$confirm" = "yes" ] || exit 0
     rm -f data/*.duckdb data/*.db
-    @echo "Database reset complete."
+    rm -rf sqlmesh/.cache/
+    @echo "Database and SQLMesh state reset complete."
 
 # ============================================================================
 # Data Quality
@@ -119,12 +121,7 @@ db-reset:
 # Run Soda quality checks
 soda-scan:
     @echo "Running Soda quality scans..."
-    uv run python -m gaming_pipeline.quality.checks
-
-# Run unified quality validation
-quality-check:
-    @echo "Running unified quality validation..."
-    uv run python -c "from gaming_pipeline.quality.checks import run_quality_checks; import json; print(json.dumps(run_quality_checks('marts'), indent=2))"
+    uv run python -m gaming_pipeline.quality
 
 # ============================================================================
 # Other
@@ -136,17 +133,7 @@ version:
 
 # Clean generated files
 clean:
-    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+    rm -rf __pycache__ .pytest_cache .ruff_cache htmlcov .coverage
     find . -type f -name "*.pyc" -delete 2>/dev/null || true
-    find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-    find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
-    rm -rf htmlcov/ .coverage 2>/dev/null || true
-
-# Demo mode (no API key required)
-demo: seed sqlmesh-apply
-
-# Seed sample data (demo mode without API key)
-seed:
-    uv run python -m gaming_pipeline.demo.seed_database
 
 

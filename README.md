@@ -1,7 +1,6 @@
 # Gaming Analytics Pipeline
 
-[![CI/CD](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml/badge.svg?logo=githubactions)](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/mohamed-boughattas/gaming-analytics-pipeline/branch/main/graph/badge.svg?logo=codecov)](https://codecov.io/gh/mohamed-boughattas/gaming-analytics-pipeline)
+[![CI](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml/badge.svg?logo=githubactions)](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3120)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?logo=mit&logoColor=white)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg?logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
@@ -88,7 +87,7 @@ This project demonstrates a modern data engineering stack with intentional tool 
 | **Ingestion**        | dlt         | Code-defined sources, **incremental loading**, automatic schema | Fivetran, Airbyte      |
 | **Storage**          | DuckDB      | Local analytics DB, zero config, fast                           | PostgreSQL, ClickHouse |
 | **Transformation**   | SQLMesh     | Virtual environments, built-in testing, no Jinja                | dbt                    |
-| **Quality**          | Soda Core   | Declarative contracts, CI/CD integration                        | Great Expectations     |
+| **Quality**          | Soda Core   | Declarative contracts, CI integration                        | Great Expectations     |
 | **Orchestration**    | Prefect 3.x | Python-native, great DX, modern UI                              | Airflow, Dagster       |
 | **Dashboard (Tech)** | Marimo      | Reactive Python notebooks, interactive                          | Streamlit, Jupyter     |
 | **Dashboard (Biz)**  | Evidence    | Markdown-first BI, static HTML output                           | Rill, Metabase         |
@@ -177,16 +176,6 @@ This stack demonstrates **modern data engineering practices** while keeping the 
    uv run python main.py
    ```
 
-### Demo Mode (No API Key Required)
-
-Try the project without a RAWG API key using sample data:
-
-```bash
-just demo
-```
-
-This seeds the database with sample games and allows you to explore the dashboards without API access.
-
 ## 📁 Project Structure
 
 ```text
@@ -209,8 +198,6 @@ gaming-analytics-pipeline/
 │   │   ├── __init__.py
 │   │   ├── checks.py              # Soda Core + SQLMesh checks
 │   │   └── checks/                # Soda contract YAML files
-│   ├── demo/                      # Demo mode (no API key required)
-│   │   └── seed_database.py       # Sample data seeder
 │
 ├── marimo/                        # Marimo reactive dashboard
 │   └── gaming_analytics.py        # Interactive visualizations
@@ -219,10 +206,9 @@ gaming-analytics-pipeline/
 │
 ├── tests/                        # Test suite
 │   ├── test_config.py             # Config tests
-│   ├── test_demo.py               # Demo/seed tests
 │   ├── test_extract.py            # Extractor tests
 │   ├── test_load.py               # Pipeline tests
-│   ├── test_orchestrate.py       # Prefect orchestration tests
+│   ├── test_orchestrate.py        # Prefect orchestration tests
 │   ├── test_quality.py            # Quality checks tests
 │   ├── test_transform.py          # Transformation tests
 │   └── conftest.py                # Pytest fixtures
@@ -235,7 +221,7 @@ gaming-analytics-pipeline/
 ├── logs/                          # Application logs (gitignored)
 ├── htmlcov/                       # Test coverage reports (gitignored)
 │
-├── .github/workflows/             # CI/CD pipelines
+├── .github/workflows/             # CI pipelines
 │   └── ci.yml                     # Lint and test
 │
 ├── .env.example                   # Environment configuration template
@@ -271,21 +257,23 @@ Get your API keys:
 
 ### Raw Layer
 
-- `raw.games`: Raw game data from RAWG (with nested JSON arrays for genres, platforms)
+- `raw.games`: Raw game data from RAWG (dlt normalizes nested JSON into child tables linked via `_dlt_id`)
+- `raw.games__genres`: Genre links for each game (id, name, slug via `_dlt_root_id`)
+- `raw.games__platforms`: Platform links for each game (platform__id, platform__name, platform__slug via `_dlt_root_id`)
 - `raw.genres`: Genre information
 - `raw.platforms`: Platform information
 
 ### Staging Layer
 
-- `staging.stg_games`: Staging games data with type casting and null handling (also preserves `genres` and `platforms` JSON columns)
+- `staging.stg_games`: Staging games data with type casting and null handling (exposes `_dlt_id` for joining child tables)
 - `staging.stg_genres`: Staging genres data with type casting and null handling
 - `staging.stg_platforms`: Staging platforms data with type casting and null handling
 
 ### Mart Layer
 
 - `marts.fct_games`: Enriched game data with rating categories, engagement scores, and release year/month extraction
-- `marts.fct_genres`: Aggregated genre statistics using DuckDB's `json_each` to explode genres from games
-- `marts.fct_platforms`: Aggregated platform statistics using DuckDB's `json_each` to explode platforms from games
+- `marts.fct_genres`: Aggregated genre statistics using JOINs to `raw.games__genres`
+- `marts.fct_platforms`: Aggregated platform statistics using JOINs to `raw.games__platforms`
 
 ## 🧪 Testing
 
@@ -376,7 +364,7 @@ just lint-security
 ### Best Practices
 
 - Keep dependencies updated regularly
-- Review security reports from CI/CD
+- Review security reports from CI
 - Report vulnerabilities responsibly through security advisories
 - Never commit secrets to repository (use environment variables)
 

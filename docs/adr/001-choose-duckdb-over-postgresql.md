@@ -33,7 +33,7 @@ We selected **DuckDB** as our primary database over PostgreSQL.
 
 While PostgreSQL is a robust production database, for this use case:
 
-- Overkill for local development and demo scenarios
+- Overkill for local development scenarios
 - Requires additional infrastructure setup
 - Higher operational complexity
 - No significant advantage for analytical workloads on this dataset size
