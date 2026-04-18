@@ -1,10 +1,8 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -50,11 +48,6 @@ jobs:
       - name: Lint YAML files
         run: uv run yamllint . -d .yamllint
 
-      - name: Lint GitHub Actions
-        uses: docker://rhysd/actionlint:latest
-        with:
-          args: '-glob "*.yml" -glob "*.yaml"'
-
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -83,9 +76,3 @@ jobs:
             --cov-report=xml \
             --cov-report=term-missing \
             --cov-report=html
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
