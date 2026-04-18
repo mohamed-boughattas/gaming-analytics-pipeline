@@ -9,7 +9,6 @@ def main() -> None:
         pipeline_flow()
     except Exception as e:
         print(f"Pipeline failed: {e}")
-        print("Hint: For demo mode without an API key, run: just demo")
         raise SystemExit(1) from None
     print("Pipeline completed successfully!")
 
