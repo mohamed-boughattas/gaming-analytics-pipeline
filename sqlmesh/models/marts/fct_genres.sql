@@ -21,14 +21,14 @@ SELECT
 FROM staging.stg_genres g
 LEFT JOIN (
         SELECT
-            gm_inner.id AS game_id,
-            gm_inner.rating,
-            gm_inner.ratings_count,
-            gm_inner.playtime,
-            je.value->>'name' AS genre_name
-        FROM staging.stg_games gm_inner
-        CROSS JOIN LATERAL json_each(gm_inner.genres) AS je
-        WHERE gm_inner.id IS NOT NULL AND gm_inner.genres IS NOT NULL
+            gg.name AS genre_name,
+            gm.id AS game_id,
+            gm.rating,
+            gm.ratings_count,
+            gm.playtime
+        FROM raw.games__genres gg
+        JOIN raw.games gm ON gg._dlt_root_id = gm._dlt_id
+        WHERE gm.id IS NOT NULL
     ) gm ON gm.genre_name = g.name
 WHERE g.id IS NOT NULL
 GROUP BY g.id, g.name, g.slug, g.games_count, g.image_background

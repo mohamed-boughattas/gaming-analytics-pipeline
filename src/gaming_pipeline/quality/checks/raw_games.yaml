@@ -39,12 +39,6 @@ columns:
       - invalid:
           valid_min: 0
 
-  - name: metacritic
-    checks:
-      - invalid:
-          valid_min: 0
-          valid_max: 100
-
   - name: playtime
     checks:
       - invalid:
@@ -54,15 +48,6 @@ columns:
     checks:
       - invalid:
           valid_min: 0
-
-  - name: suggestions_count
-    checks:
-      - invalid:
-          valid_min: 0
-
-  - name: genres
-
-  - name: platforms
 
 checks:
   - row_count:

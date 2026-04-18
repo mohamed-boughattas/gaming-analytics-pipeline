@@ -22,14 +22,14 @@ SELECT
 FROM staging.stg_platforms p
 LEFT JOIN (
         SELECT
-            gm_inner.id AS game_id,
-            gm_inner.rating,
-            gm_inner.ratings_count,
-            gm_inner.playtime,
-            je.value->'platform'->>'name' AS platform_name
-        FROM staging.stg_games gm_inner
-        CROSS JOIN LATERAL json_each(gm_inner.platforms) AS je
-        WHERE gm_inner.id IS NOT NULL AND gm_inner.platforms IS NOT NULL
+            gp.platform__name AS platform_name,
+            gm.id AS game_id,
+            gm.rating,
+            gm.ratings_count,
+            gm.playtime
+        FROM raw.games__platforms gp
+        JOIN raw.games gm ON gp._dlt_root_id = gm._dlt_id
+        WHERE gm.id IS NOT NULL
     ) gm ON gm.platform_name = p.name
 WHERE p.id IS NOT NULL
 GROUP BY p.id, p.name, p.slug, p.games_count, p.image_background, p.year_start

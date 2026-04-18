@@ -73,12 +73,8 @@ class TestFctGenresModel:
         assert "total_games" in fct_genres_content.lower()
 
     def test_uses_staging_games_json_explode(self, fct_genres_content: str) -> None:
-        assert "staging.stg_games" in fct_genres_content
-        assert "genres" in fct_genres_content.lower()
-        assert (
-            "json_each" in fct_genres_content.lower()
-            or "unnest" in fct_genres_content.lower()
-        )
+        assert "raw.games__genres" in fct_genres_content
+        assert "_dlt_root_id" in fct_genres_content
 
 
 class TestFctPlatformsModel:
@@ -98,12 +94,8 @@ class TestFctPlatformsModel:
         assert "total_games" in fct_platforms_content.lower()
 
     def test_uses_staging_games_json_explode(self, fct_platforms_content: str) -> None:
-        assert "staging.stg_games" in fct_platforms_content
-        assert "platforms" in fct_platforms_content.lower()
-        assert (
-            "json_each" in fct_platforms_content.lower()
-            or "unnest" in fct_platforms_content.lower()
-        )
+        assert "raw.games__platforms" in fct_platforms_content
+        assert "_dlt_root_id" in fct_platforms_content
 
 
 class TestStagingModels:
@@ -122,11 +114,8 @@ class TestStagingModels:
     def test_stg_games_has_rating_column(self, stg_games_content: str) -> None:
         assert "rating" in stg_games_content.lower()
 
-    def test_stg_games_has_genres_and_platforms_json(
-        self, stg_games_content: str
-    ) -> None:
-        assert "genres" in stg_games_content.lower()
-        assert "platforms" in stg_games_content.lower()
+    def test_stg_games_has_dlt_id(self, stg_games_content: str) -> None:
+        assert "_dlt_id" in stg_games_content
 
     def test_is_sqlmesh_model(self, stg_games_content: str) -> None:
         assert "MODEL (" in stg_games_content or "MODEL(" in stg_games_content

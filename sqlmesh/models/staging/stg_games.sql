@@ -23,7 +23,6 @@ SELECT
     TRY_CAST(reviews_count AS INTEGER) AS reviews_count,
     saturated_color,
     dominant_color,
-    genres,
-    platforms
+    _dlt_id
 FROM raw.games
 WHERE id IS NOT NULL
