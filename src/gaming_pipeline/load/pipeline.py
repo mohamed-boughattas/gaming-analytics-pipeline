@@ -165,8 +165,9 @@ class GamingPipeline:
     def refresh_schema(self) -> None:
         """Refresh schema from destination."""
         try:
-            if hasattr(self.pipeline, "refresh"):
-                self.pipeline.refresh()  # type: ignore[misc]
+            refresh = getattr(self.pipeline, "refresh", None)
+            if callable(refresh):
+                refresh()
             else:
                 logger.debug("Pipeline refresh not available, skipping")
         except Exception as e:
