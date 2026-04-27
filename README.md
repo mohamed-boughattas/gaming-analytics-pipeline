@@ -1,7 +1,7 @@
 # Gaming Analytics Pipeline
 
 [![CI](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml/badge.svg?logo=githubactions)](https://github.com/mohamed-boughattas/gaming-analytics-pipeline/actions/workflows/ci.yml)
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3120)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?logo=mit&logoColor=white)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg?logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
 [![SQL Linting: sqlfluff](https://img.shields.io/badge/SQL%20linting-sqlfluff-blue?logo=sql)](https://sqlfluff.com/)
@@ -44,19 +44,20 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 │  └──────┬───────┘                                                          │
 │         │                                                                   │
 │         ▼                                                                   │
-│  ┌──────────────────────────────────┐                                     │
-│  │         DuckDB                   │ ◄── Local DuckDB storage             │
-│  │   ┌───────┐  ┌───────┐         │                                     │
-│  │   │  raw  │─▶│ marts │         │                                     │
-│  │   └───────┘  └───────┘         │                                     │
-│  └──────────────┬──────────────────┘                                     │
-│                 │                                                           │
-│         ┌───────┴───────┐                                                  │
-│         │               │                                                  │
-│         ▼               ▼                                                  │
-│  ┌──────────────┐ ┌──────────────┐                                        │
+│  ┌──────────────────────────────────────────┐                            │
+│  │              DuckDB                         │ ◄── Local DuckDB storage     │
+│  │   ┌───────┐  ┌──────────┐  ┌───────┐      │                            │
+│  │   │  raw  │─▶│ staging  │─▶│ marts │      │                            │
+│  │   │(table)│  │ (views)  │  │(views)│      │                            │
+│  │   └───────┘  └──────────┘  └───────┘      │                            │
+│  └──────────────────┬─────────────────────────┘                            │
+│                     │                                                        │
+│             ┌───────┴───────┐                                               │
+│             │               │                                               │
+│             ▼               ▼                                               │
+│  ┌──────────────┐ ┌──────────────┐                                         │
 │  │   SQLMesh    │ │    Soda      │ ◄── Quality (Defense in Depth)        │
-│  │ (Transform)  │ │  (Checks)    │                                        │
+│  │ (Transform)  │ │  (Checks)    │                                         │
 │  └──────────────┘ └──────────────┘                                        │
 │                 │                                                           │
 │         ┌───────┴───────┐                                                  │
@@ -70,7 +71,7 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-Data Flow: RAWG API → dlt → DuckDB → SQLMesh → Soda → Marimo/Evidence
+Data Flow: RAWG API → dlt → raw → staging → marts → Soda → Marimo/Evidence
 Quality Gate: Soda Core + SQLMesh Tests
 ```
 
@@ -78,34 +79,23 @@ Quality Gate: Soda Core + SQLMesh Tests
 
 For detailed documentation of data flow and transformations, see [docs/data-flow.md](docs/data-flow.md).
 
-## 🛠️ Why This Stack?
+## 🛠️ Tool Selection & Trade-offs
 
 This project demonstrates a modern data engineering stack with intentional tool selection:
 
-| Layer                | Tool        | Why Chosen                                                      | Alternative            |
-| -------------------- | ----------- | --------------------------------------------------------------- | ---------------------- |
-| **Ingestion**        | dlt         | Code-defined sources, **incremental loading**, automatic schema | Fivetran, Airbyte      |
-| **Storage**          | DuckDB      | Local analytics DB, zero config, fast                           | PostgreSQL, ClickHouse |
-| **Transformation**   | SQLMesh     | Virtual environments, built-in testing, no Jinja                | dbt                    |
-| **Quality**          | Soda Core   | Declarative contracts, CI integration                        | Great Expectations     |
-| **Orchestration**    | Prefect 3.x | Python-native, great DX, modern UI                              | Airflow, Dagster       |
-| **Dashboard (Tech)** | Marimo      | Reactive Python notebooks, interactive                          | Streamlit, Jupyter     |
-| **Dashboard (Biz)**  | Evidence    | Markdown-first BI, static HTML output                           | Rill, Metabase         |
-| **Package Manager**  | uv          | 10-100x faster than pip, lockfile                               | pip, Poetry            |
-| **Build Tool**       | Just        | Modern Make alternative, better errors                          | Make                   |
+| Layer                | Tool           | Why Chosen                                                                                  | Alternative                     |
+| -------------------- | -------------- | ------------------------------------------------------------------------------------------- | ------------------------------- |
+| **Ingestion**        | dlt            | Code-defined sources, checkpoint-based incremental loading, automatic schema, no duplicates | Fivetran, Airbyte               |
+| **Storage**          | DuckDB         | Embedded analytics DB, zero config, fast queries                                            | PostgreSQL, ClickHouse          |
+| **Transformation**   | SQLMesh        | Virtual environments for dev/prod parity, built-in testing, no Jinja                        | dbt (popular, separate testing) |
+| **Quality**          | Soda + SQLMesh | Defense in depth: declarative contracts + transformation tests                              | Single tool (less coverage)     |
+| **Orchestration**    | Prefect        | Python-native, task retries with backoff, great DX                                          | Airflow (heavier, Java-centric) |
+| **Dashboard (Tech)** | Marimo         | Reactive Python notebooks, interactive                                                      | Streamlit, Jupyter              |
+| **Dashboard (Biz)**  | Evidence       | Markdown-first BI, static HTML output, dual audience                                        | Rill, Metabase                  |
+| **Package Manager**  | uv             | 10-100x faster than pip, lockfile                                                           | pip, Poetry                     |
+| **Build Tool**       | Just           | Modern Make alternative, better errors                                                      | Make                            |
 
 This stack demonstrates **modern data engineering practices** while keeping the project accessible and reproducible.
-
-## ⚖️ Architectural Trade-offs
-
-| Decision           | Choice               | Rationale                                          | Alternative Considered          |
-| ------------------ | -------------------- | -------------------------------------------------- | ------------------------------- |
-| **Database**       | DuckDB               | Embedded analytics DB, zero config, fast queries   | PostgreSQL, ClickHouse          |
-| **Ingestion**      | dlt with incremental | Checkpoint-based, resumable, no duplicates         | Full reload (wastes API calls)  |
-| **Transformation** | SQLMesh              | Virtual envs for dev/prod parity, built-in tests   | dbt (popular, separate testing) |
-| **Quality**        | Soda + SQLMesh       | Defense in depth: contracts + transformation tests | Single tool (less coverage)     |
-| **Orchestration**  | Prefect 3.x          | Python-native, task retries with backoff           | Airflow (heavier, Java-centric) |
-| **Dashboards**     | Marimo + Evidence    | Dual audience: technical + business users          | Single tool (limited audience)  |
 
 ## 🔧 Technical Challenges & Solutions
 
@@ -241,11 +231,21 @@ gaming-analytics-pipeline/
 
 ### Environment Variables
 
-| Variable          | Description             | Required |
-| ----------------- | ----------------------- | -------- |
-| `RAWG_API_KEY`    | RAWG API key            | Yes      |
-| `DB_PATH`         | Path to DuckDB database | No       |
-| `PREFECT_API_URL` | Prefect API URL         | No       |
+| Variable                       | Description                      | Required | Default                              |
+| ------------------------------ | -------------------------------- | -------- | ------------------------------------ |
+| `RAWG_API_KEY`                 | RAWG API key                     | Yes      | —                                    |
+| `DB_PATH`                      | Path to DuckDB database          | No       | `data/gaming_analytics.duckdb`       |
+| `ENVIRONMENT`                  | Runtime environment              | No       | `development`                        |
+| `PREFECT_API_URL`              | Prefect API URL                  | No       | —                                    |
+| `PREFECT_API_KEY`              | Prefect Cloud API key            | No       | —                                    |
+| `PREFECT_ACCOUNT_ID`           | Prefect Cloud account ID         | No       | —                                    |
+| `PREFECT_WORKSPACE_ID`         | Prefect Cloud workspace ID       | No       | —                                    |
+| `PIPELINE_BATCH_SIZE`          | Records per batch                | No       | `100`                                |
+| `PIPELINE_MAX_RETRIES`         | Max retry attempts               | No       | `3`                                  |
+| `PIPELINE_RETRY_DELAY`         | Delay between retries (seconds)  | No       | `5`                                  |
+| `PIPELINE_PARALLEL_REQUESTS`   | Max concurrent API requests      | No       | `5`                                  |
+| `PIPELINE_DATA_RETENTION_DAYS` | Data retention period (days)     | No       | `365`                                |
+| `SODA_CHECKS_PATH`             | Path to Soda contract YAML files | No       | `src/gaming_pipeline/quality/checks` |
 
 ### API Keys
 
@@ -309,10 +309,16 @@ The pipeline runs in the following order:
 
 ### Data Quality
 
-View Soda Core results:
+View Soda Core + SQLMesh quality results:
 
 ```bash
 just soda-scan
+```
+
+Or run directly:
+
+```bash
+uv run python -m gaming_pipeline.quality
 ```
 
 ### Marimo Dashboard Overview
