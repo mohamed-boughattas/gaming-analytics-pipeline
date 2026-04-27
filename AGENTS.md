@@ -21,46 +21,57 @@ just sqlmesh-test  # cd sqlmesh && uv run sqlmesh test --verbose
 just sqlmesh-plan  # cd sqlmesh && uv run sqlmesh plan
 just sqlmesh-apply # cd sqlmesh && uv run sqlmesh plan --auto-apply
 just lint-full     # just format → lint → typecheck → sqlmesh-lint → lint-yaml
-just soda-scan     # uv run python -m gaming_pipeline.quality.checks
+just soda-scan     # uv run python -m gaming_pipeline.quality
 ```
 
 ## CI Order
 
-`just lint-full` runs: format → lint → lint-security → typecheck → sqlmesh-lint → lint-yaml
+`just lint-full` runs: format → lint → lint-security → typecheck → sqlmesh-lint → lint-yaml.
 
-CI has 2 jobs: `lint` (lint + typecheck + sqlmesh-lint) and `test`.
+**Note**: `just lint-full` auto-formats with `ruff format`; CI only runs `ruff format --check` (read-only check). Run `just lint-full` locally before committing to match CI.
+
+CI has 2 jobs: `lint` (lint + typecheck + sqlmesh-lint) and `test`. Test job requires **85% coverage** (`--cov-fail-under=85`).
 
 ## Architecture
 
 ```
-RAWG API → dlt (extract/load) → DuckDB → SQLMesh (transform)
-                                                      → Soda Core (quality checks)
-                                                      → Marimo / Evidence (visualization)
+RAWG API → dlt (loads into raw schema in DuckDB)
+                ↓
+         DuckDB (raw tables)
+                ↓
+         SQLMesh (staging views + marts views)
+                ↓
+         Soda Core (quality checks) + Marimo / Evidence (visualization)
+```
 
-Package: src/gaming_pipeline/
+**DuckDB schema layers** (all in one DuckDB file):
+- `raw.*` — dlt-loaded tables (from RAWG API)
+- `staging.*` — SQLMesh VIEWs (type casting, null handling)
+- `marts.*` — SQLMesh VIEWs (business logic, derived metrics)
+
+Package: `src/gaming_pipeline/`
   config/     # Pydantic settings from .env
   extract/    # dlt source (dlt_source.py)
   load/      # dlt pipeline wrapper
   orchestrate/  # Prefect flows + tasks
   quality/    # Soda checks (checks.py) + contract YAML files
   (no transform/ — SQLMesh called directly via subprocess)
-```
 
-## SQLMesh Model Locations
-
+SQLMesh model locations:
 - Staging: `sqlmesh/models/staging/stg_*.sql`
 - Marts: `sqlmesh/models/marts/fct_*.sql`
-
-SQLMesh config: `sqlmesh/sqlmesh.yaml` — dialect `duckdb`, gateway `local`.
+- Config: `sqlmesh/sqlmesh.yaml` — dialect `duckdb`, gateway `local`
 
 ## Important Gotchas
 
 - Marimo must bind to `0.0.0.0` with `--no-token`
-- sqlfluff excludes `tests/sqlmesh/`
 - sqlfluff enforces `capitalisation = lower` — all SQL keywords must be lowercase
+- sqlfluff uses `templater = raw` (SQLMesh uses custom Jinja-like syntax, not sqlfluff templates)
 - `.env` is gitignored; copy from `.env.example`
 - Evidence requires Node 22 (use `fnm use 22` or `just evidence` handles this)
 - SQLMesh gateway is `duckdb` (local file); path in `sqlmesh/sqlmesh.yaml` must be absolute (resolved relative to `sqlmesh/` dir)
+- SQLMesh tests are `.sql` files in `sqlmesh/tests/`, run via `just sqlmesh-test` (not pytest)
+- Soda quality uses `verify_contract_locally` (Soda Core v4 contract API), not SodaCL scan files
 
 ## Conventions
 
@@ -68,4 +79,3 @@ SQLMesh config: `sqlmesh/sqlmesh.yaml` — dialect `duckdb`, gateway `local`.
 - **Docstrings**: Google-style
 - **Type hints**: Required; use `ty` (astral-sh/ty), not mypy
 - **DuckDB paths**: Use `read_only=True` for concurrent read access
-- **Secrets**: Never commit secrets to the repository
