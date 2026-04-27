@@ -27,53 +27,7 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         Gaming Analytics Pipeline                            │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌──────────────┐                                                          │
-│  │   RAWG API   │ ◄── Source                                               │
-│  └──────┬───────┘                                                          │
-│         │                                                                   │
-│         ▼                                                                   │
-│  ┌──────────────┐     ┌──────────────┐                                    │
-│  │     dlt      │ ◄── │   Prefect     │ ◄── Orchestration                 │
-│  │  (Ingestion) │     │   (Tasks)     │                                    │
-│  │  Incremental │     └──────────────┘                                    │
-│  └──────┬───────┘                                                          │
-│         │                                                                   │
-│         ▼                                                                   │
-│  ┌──────────────────────────────────────────┐                            │
-│  │              DuckDB                         │ ◄── Local DuckDB storage     │
-│  │   ┌───────┐  ┌──────────┐  ┌───────┐      │                            │
-│  │   │  raw  │─▶│ staging  │─▶│ marts │      │                            │
-│  │   │(table)│  │ (views)  │  │(views)│      │                            │
-│  │   └───────┘  └──────────┘  └───────┘      │                            │
-│  └──────────────────┬─────────────────────────┘                            │
-│                     │                                                        │
-│             ┌───────┴───────┐                                               │
-│             │               │                                               │
-│             ▼               ▼                                               │
-│  ┌──────────────┐ ┌──────────────┐                                         │
-│  │   SQLMesh    │ │    Soda      │ ◄── Quality (Defense in Depth)        │
-│  │ (Transform)  │ │  (Checks)    │                                         │
-│  └──────────────┘ └──────────────┘                                        │
-│                 │                                                           │
-│         ┌───────┴───────┐                                                  │
-│         │               │                                                  │
-│         ▼               ▼                                                  │
-│  ┌──────────────┐ ┌──────────────┐                                       │
-│  │    Marimo     │ │   Evidence    │ ◄── Visualization (Dual Audience)   │
-│  │   :2718       │ │    :3000     │                                       │
-│  │  Python       │ │  Markdown    │                                       │
-│  └──────────────┘ └──────────────┘                                       │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-Data Flow: RAWG API → dlt → raw → staging → marts → Soda → Marimo/Evidence
-Quality Gate: Soda Core + SQLMesh Tests
-```
+![Architecture Diagram](docs/images/diagram.png)
 
 ## 📈 Data Lineage
 
@@ -186,8 +140,10 @@ gaming-analytics-pipeline/
 │   │   └── tasks.py               # Prefect tasks
 │   ├── quality/                   # Data quality layer
 │   │   ├── __init__.py
+│   │   ├── __main__.py            # Module entry point
 │   │   ├── checks.py              # Soda Core + SQLMesh checks
-│   │   └── checks/                # Soda contract YAML files
+│   │   ├── checks/                # Soda contract YAML files
+│   │   └── data_source.yaml       # Soda data source config
 │
 ├── marimo/                        # Marimo reactive dashboard
 │   └── gaming_analytics.py        # Interactive visualizations
@@ -205,10 +161,11 @@ gaming-analytics-pipeline/
 │
 ├── docs/                          # Documentation
 │   ├── adr/                       # Architecture Decision Records
+│   ├── images/                    # Diagrams and images
+│   │   └── diagram.png            # Architecture diagram
 │   └── data-flow.md              # Data flow documentation
 │
 ├── data/                          # DuckDB database files (gitignored)
-├── logs/                          # Application logs (gitignored)
 ├── htmlcov/                       # Test coverage reports (gitignored)
 │
 ├── .github/workflows/             # CI pipelines
@@ -217,6 +174,7 @@ gaming-analytics-pipeline/
 ├── .env.example                   # Environment configuration template
 ├── .gitignore                     # Git ignore patterns
 ├── .sqlfluff                      # SQL linter configuration
+├── AGENTS.md                      # Agent instruction file
 ├── LICENSE                        # MIT License
 ├── README.md                      # Project documentation
 ├── main.py                        # Pipeline entry point
@@ -233,13 +191,9 @@ gaming-analytics-pipeline/
 
 | Variable                       | Description                      | Required | Default                              |
 | ------------------------------ | -------------------------------- | -------- | ------------------------------------ |
-| `RAWG_API_KEY`                 | RAWG API key                     | Yes      | —                                    |
+| `RAWG_API_KEY`                 | RAWG API key                     | No       | —                                    |
 | `DB_PATH`                      | Path to DuckDB database          | No       | `data/gaming_analytics.duckdb`       |
 | `ENVIRONMENT`                  | Runtime environment              | No       | `development`                        |
-| `PREFECT_API_URL`              | Prefect API URL                  | No       | —                                    |
-| `PREFECT_API_KEY`              | Prefect Cloud API key            | No       | —                                    |
-| `PREFECT_ACCOUNT_ID`           | Prefect Cloud account ID         | No       | —                                    |
-| `PREFECT_WORKSPACE_ID`         | Prefect Cloud workspace ID       | No       | —                                    |
 | `PIPELINE_BATCH_SIZE`          | Records per batch                | No       | `100`                                |
 | `PIPELINE_MAX_RETRIES`         | Max retry attempts               | No       | `3`                                  |
 | `PIPELINE_RETRY_DELAY`         | Delay between retries (seconds)  | No       | `5`                                  |
@@ -277,16 +231,16 @@ Get your API keys:
 
 ## 🧪 Testing
 
-Run all tests:
+Run all tests (fast, no coverage):
+
+```bash
+pytest tests/ -v --no-cov
+```
+
+Run with coverage (default — bare `pytest` includes coverage via `pyproject.toml`):
 
 ```bash
 pytest tests/ -v
-```
-
-Run with coverage:
-
-```bash
-pytest tests/ --cov=src --cov-report=html
 ```
 
 Run specific test file:
@@ -398,16 +352,16 @@ We use [Ruff](https://github.com/astral-sh/ruff) for linting and formatting, [ty
 
 ```bash
 # Lint Python code
-ruff check src/ tests/
+uv run ruff check src/ tests/
 
 # Format code
-ruff format src/ tests/
+uv run ruff format src/ tests/
 
 # Type checking
-ty check src/
+uv run ty check src/
 
 # Lint SQL files
-sqlfluff lint sqlmesh/
+cd sqlmesh && uv run sqlfluff lint
 ```
 
 ### Adding New Features
