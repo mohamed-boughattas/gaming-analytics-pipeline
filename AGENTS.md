@@ -14,14 +14,15 @@ just install        # uv sync
 just lint          # uv run ruff check src/ tests/ (includes --select S)
 just format        # uv run ruff format src/ tests/
 just typecheck     # uv run ty check src/
-just test         # uv run pytest tests/ -v --no-cov
-just test-cov    # uv run pytest tests/ -v --cov=src --cov-report=term-missing
+just test          # uv run pytest tests/ -v --no-cov (fast, no coverage)
+just test-cov      # uv run pytest tests/ -v --cov=src --cov-report=term-missing
 just sqlmesh-lint   # cd sqlmesh && uv run sqlmesh lint
 just sqlmesh-test  # cd sqlmesh && uv run sqlmesh test --verbose
 just sqlmesh-plan  # cd sqlmesh && uv run sqlmesh plan
 just sqlmesh-apply # cd sqlmesh && uv run sqlmesh plan --auto-apply
-just lint-full     # just format → lint → typecheck → sqlmesh-lint → lint-yaml
+just lint-full     # format → lint → lint-security → typecheck → sqlmesh-lint → lint-yaml
 just soda-scan     # uv run python -m gaming_pipeline.quality
+just db-reset      # deletes DuckDB + SQLMesh cache (prompts confirmation)
 ```
 
 ## CI Order
@@ -30,7 +31,7 @@ just soda-scan     # uv run python -m gaming_pipeline.quality
 
 **Note**: `just lint-full` auto-formats with `ruff format`; CI only runs `ruff format --check` (read-only check). Run `just lint-full` locally before committing to match CI.
 
-CI has 2 jobs: `lint` (lint + typecheck + sqlmesh-lint) and `test`.
+CI has 2 jobs: `lint` (format-check + lint + typecheck + sqlmesh-lint + yamllint) and `test` (pytest with coverage).
 
 ## Architecture
 
@@ -72,6 +73,10 @@ SQLMesh model locations:
 - SQLMesh gateway is `duckdb` (local file); path in `sqlmesh/sqlmesh.yaml` must be absolute (resolved relative to `sqlmesh/` dir)
 - SQLMesh tests are `.sql` files in `sqlmesh/tests/`, run via `just sqlmesh-test` (not pytest)
 - Soda quality uses `verify_contract_locally` (Soda Core v4 contract API), not SodaCL scan files
+- Soda data_source.yaml uses relative path — `just soda-scan` must run from repo root
+- bare `pytest` runs with coverage by default (pyproject.toml `addopts`); use `just test` for fast runs or `pytest --no-cov` explicitly
+- yamllint ignores `.github/` and `sqlmesh/` — CI YAML and SQLMesh config are not linted by yamllint
+- `lint` already includes `S` (security) rules via ruff config; `lint-security` is a redundant explicit pass — both run in `lint-full`
 
 ## Conventions
 
