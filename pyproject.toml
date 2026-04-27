@@ -1,7 +1,7 @@
 [project]
 name = "gaming_analytics_pipeline"
 version = "0.1.0"
-description = "Modern data engineering pipeline for gaming analytics using RAWG and Steam APIs"
+description = "Modern data engineering pipeline for gaming analytics using the RAWG API"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
