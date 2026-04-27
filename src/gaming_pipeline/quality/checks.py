@@ -8,6 +8,8 @@ from typing import Any
 
 from soda_core.contracts import verify_contract_locally
 
+from gaming_pipeline.config import config
+
 logger = logging.getLogger(__name__)
 
 CONTRACT_FILES: dict[str, list[str]] = {
@@ -145,7 +147,7 @@ def run_soda_checks(layer: str = "marts") -> dict[str, Any]:
     Returns:
         Dictionary with overall pass/fail and per-file results.
     """
-    checks_dir = Path(__file__).parent / "checks"
+    checks_dir = Path(config.soda.checks_path)
     contract_files = CONTRACT_FILES.get(layer, [])
     if not contract_files:
         return {"passed": False, "failed": True, "error": f"Unknown layer: {layer}"}
