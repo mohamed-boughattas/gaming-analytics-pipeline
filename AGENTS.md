@@ -30,7 +30,7 @@ just soda-scan     # uv run python -m gaming_pipeline.quality
 
 **Note**: `just lint-full` auto-formats with `ruff format`; CI only runs `ruff format --check` (read-only check). Run `just lint-full` locally before committing to match CI.
 
-CI has 2 jobs: `lint` (lint + typecheck + sqlmesh-lint) and `test`. Test job requires **85% coverage** (`--cov-fail-under=85`).
+CI has 2 jobs: `lint` (lint + typecheck + sqlmesh-lint) and `test`.
 
 ## Architecture
 
