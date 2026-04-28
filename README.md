@@ -47,7 +47,7 @@ This project demonstrates a modern data engineering stack with intentional tool 
 | **Dashboard (Tech)** | Marimo         | Reactive Python notebooks, interactive                                                      | Streamlit, Jupyter              |
 | **Dashboard (Biz)**  | Evidence       | Markdown-first BI, static HTML output, dual audience                                        | Rill, Metabase                  |
 | **Package Manager**  | uv             | 10-100x faster than pip, lockfile                                                           | pip, Poetry                     |
-| **Build Tool**       | Just           | Modern Make alternative, better errors                                                      | Make                            |
+| **Build Tool**       | Taskfile       | YAML-based, cross-platform, dependency-aware task runner                                    | Make, Just                      |
 
 This stack demonstrates **modern data engineering practices** while keeping the project accessible and reproducible.
 
@@ -82,7 +82,7 @@ This stack demonstrates **modern data engineering practices** while keeping the 
 
 **Solution**:
 - `uv` instead of `pip` (10-100x faster)
-- `Just` instead of `Make` (cleaner syntax)
+- `Taskfile` instead of `Make` (YAML-based, cross-platform)
 - `dlt` instead of custom scripts (battle-tested)
 
 ## 🚀 Quick Start
@@ -180,7 +180,7 @@ gaming-analytics-pipeline/
 ├── main.py                        # Pipeline entry point
 ├── pyproject.toml                 # Project dependencies & tool config
 ├── uv.lock                        # Dependency lock file
-├── justfile                       # Development commands
+├── Taskfile.yml                   # Development task runner
 └── sqlmesh/                       # SQLMesh project
     └── sqlmesh.yaml              # SQLMesh configuration
 ```
@@ -266,7 +266,7 @@ The pipeline runs in the following order:
 View Soda Core + SQLMesh quality results:
 
 ```bash
-just soda-scan
+task soda-scan
 ```
 
 Or run directly:
@@ -313,7 +313,7 @@ This project uses automated security scanning to ensure code and dependency safe
 
 ```bash
 # Run Ruff security rules
-just lint-security
+task lint-security
 ```
 
 ### Security Reports
