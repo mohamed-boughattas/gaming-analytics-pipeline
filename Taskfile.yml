@@ -1,0 +1,154 @@
+version: '3'
+
+vars:
+  PYTHON_SRC: src/
+  PYTHON_TESTS: tests/
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  # === Setup ===
+
+  install:
+    desc: Install dependencies
+    cmds:
+      - uv sync
+
+  # === Linting & Formatting ===
+
+  lint:
+    desc: Run linters (ruff)
+    cmds:
+      - uv run ruff check {{.PYTHON_SRC}} {{.PYTHON_TESTS}}
+
+  format:
+    desc: Format code (ruff)
+    cmds:
+      - uv run ruff format {{.PYTHON_SRC}} {{.PYTHON_TESTS}}
+
+  typecheck:
+    desc: Type checking
+    cmds:
+      - uv run ty check {{.PYTHON_SRC}}
+
+  lint-yaml:
+    desc: Lint YAML files
+    cmds:
+      - uv run yamllint . -d .yamllint
+
+  lint-security:
+    desc: Run security checks
+    cmds:
+      - uv run ruff check {{.PYTHON_SRC}} {{.PYTHON_TESTS}} --select S
+
+  # === Testing ===
+
+  test:
+    desc: Run tests (no coverage — fast)
+    cmds:
+      - uv run pytest tests/ -v --no-cov
+
+  test-cov:
+    desc: Run tests with coverage
+    cmds:
+      - uv run pytest tests/ -v --cov=src --cov-report=term-missing
+
+  # === Full CI ===
+
+  lint-full:
+    desc: Run full CI locally
+    cmds:
+      - task: format
+      - task: lint
+      - task: lint-security
+      - task: typecheck
+      - task: sqlmesh-lint
+      - task: lint-yaml
+
+  # === Pipeline ===
+
+  run:
+    desc: Run daily pipeline
+    cmds:
+      - uv run python main.py
+
+  sqlmesh-plan:
+    desc: Create SQLMesh plan (dev)
+    dir: sqlmesh
+    cmds:
+      - uv run sqlmesh plan
+
+  sqlmesh-apply:
+    desc: Apply SQLMesh plan
+    dir: sqlmesh
+    cmds:
+      - uv run sqlmesh plan --auto-apply
+
+  sqlmesh-test:
+    desc: Run SQLMesh tests
+    dir: sqlmesh
+    cmds:
+      - uv run sqlmesh test --verbose
+
+  sqlmesh-lint:
+    desc: Run SQLMesh linting
+    dir: sqlmesh
+    cmds:
+      - uv run sqlmesh lint
+
+  # === Dashboards ===
+
+  marimo:
+    desc: Start Marimo dashboard
+    cmds:
+      - uv run marimo edit marimo/gaming_analytics.py --headless --host 0.0.0.0 --port 2718 --no-token
+
+  evidence:
+    desc: Start Evidence dashboard (Node 22 required)
+    dir: evidence
+    cmds:
+      - bash -c 'eval "$(fnm env)" && fnm use 22 && npm run dev'
+
+  # === Database ===
+
+  db-reset:
+    desc: "Reset database and SQLMesh state (WARNING: deletes all data)"
+    interactive: true
+    preconditions:
+      - sh: test -t 0
+        msg: "Must run interactively"
+    cmds:
+      - |
+        echo "⚠️  This will delete the DuckDB database and all data!"
+        echo "Type 'yes' to confirm or anything else to cancel:"
+        read confirm
+        if [ "$confirm" = "yes" ]; then
+          rm -f data/*.duckdb data/*.db
+          rm -rf sqlmesh/.cache/
+          echo "Database and SQLMesh state reset complete."
+        else
+          echo "Cancelled."
+        fi
+
+  # === Data Quality ===
+
+  soda-scan:
+    desc: Run Soda quality checks
+    cmds:
+      - uv run python -m gaming_pipeline.quality
+
+  # === Other ===
+
+  version:
+    desc: Show version
+    cmds:
+      - uv run python -c "from importlib.metadata import version; print(version('gaming_analytics_pipeline'))"
+
+  clean:
+    desc: Clean generated files
+    cmds:
+      - rm -rf __pycache__ .pytest_cache .ruff_cache htmlcov .coverage
+      - find . -type f -name "*.pyc" -delete 2>/dev/null || true
