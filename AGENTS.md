@@ -1,5 +1,10 @@
 # AGENTS.md
 
+## Requirements
+
+- Python 3.12–3.13 (`requires-python = ">=3.12,<3.14"`)
+- [uv](https://github.com/astral-sh/uv) package manager
+
 ## Entry Points
 
 - **Pipeline run**: `uv run python main.py`
@@ -25,11 +30,9 @@ just soda-scan     # uv run python -m gaming_pipeline.quality
 just db-reset      # deletes DuckDB + SQLMesh cache (prompts confirmation)
 ```
 
-## CI Order
+## CI
 
-`just lint-full` runs: format → lint → lint-security → typecheck → sqlmesh-lint → lint-yaml.
-
-**Note**: `just lint-full` auto-formats with `ruff format`; CI only runs `ruff format --check` (read-only check). Run `just lint-full` locally before committing to match CI.
+`just lint-full` auto-formats with `ruff format`; CI runs `ruff format --check` (read-only). Run `just lint-full` locally before committing.
 
 CI has 2 jobs: `lint` (format-check + lint + typecheck + sqlmesh-lint + yamllint) and `test` (pytest with coverage).
 
@@ -61,22 +64,24 @@ Package: `src/gaming_pipeline/`
 SQLMesh model locations:
 - Staging: `sqlmesh/models/staging/stg_*.sql`
 - Marts: `sqlmesh/models/marts/fct_*.sql`
-- Config: `sqlmesh/sqlmesh.yaml` — dialect `duckdb`, gateway `local`
+- Config: `sqlmesh/sqlmesh.yaml` — gateway name `local`, connection type `duckdb`
 
 ## Important Gotchas
 
+- Python 3.12–3.13 only (`>=3.12,<3.14`)
 - Marimo must bind to `0.0.0.0` with `--no-token`
 - sqlfluff enforces `capitalisation = lower` — all SQL keywords must be lowercase
 - sqlfluff uses `templater = raw` (SQLMesh uses custom Jinja-like syntax, not sqlfluff templates)
 - `.env` is gitignored; copy from `.env.example`
 - Evidence requires Node 22 (use `fnm use 22` or `just evidence` handles this)
-- SQLMesh gateway is `duckdb` (local file); path in `sqlmesh/sqlmesh.yaml` must be absolute (resolved relative to `sqlmesh/` dir)
+- SQLMesh gateway name is `local` (not `duckdb`); database path in `sqlmesh.yaml` is absolute
 - SQLMesh tests are `.sql` files in `sqlmesh/tests/`, run via `just sqlmesh-test` (not pytest)
 - Soda quality uses `verify_contract_locally` (Soda Core v4 contract API), not SodaCL scan files
-- Soda data_source.yaml uses relative path — `just soda-scan` must run from repo root
+- Soda `data_source.yaml` uses relative path — `just soda-scan` must run from repo root
 - bare `pytest` runs with coverage by default (pyproject.toml `addopts`); use `just test` for fast runs or `pytest --no-cov` explicitly
 - yamllint ignores `.github/` and `sqlmesh/` — CI YAML and SQLMesh config are not linted by yamllint
 - `lint` already includes `S` (security) rules via ruff config; `lint-security` is a redundant explicit pass — both run in `lint-full`
+- pytest `integration` marker requires a running Prefect server; skip with `pytest -m "not integration"`
 
 ## Conventions
 
