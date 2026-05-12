@@ -35,7 +35,7 @@ task db-reset      # deletes DuckDB + SQLMesh cache (requires interactive TTY, t
 
 `task lint-full` auto-formats with `ruff format`; CI runs `ruff format --check` (read-only). Run `task lint-full` locally before committing.
 
-CI has 2 jobs: `lint` (format-check + lint + typecheck + sqlmesh-lint + yamllint) and `test` (pytest with coverage).
+CI has 2 jobs: `lint` (format-check + lint + typecheck + sqlmesh-lint + sqlmesh-test + yamllint) and `test` (pytest with coverage).
 
 ## Architecture
 
@@ -84,6 +84,7 @@ SQLMesh model locations:
 - yamllint ignores `.github/` and `sqlmesh/` — CI YAML and SQLMesh config are not linted by yamllint
 - `lint` already includes `S` (security) rules via ruff config; `lint-security` is a redundant explicit pass — both run in `lint-full`
 - pytest `integration` marker requires a running Prefect server; skip with `pytest -m "not integration"`
+- `tests/conftest.py` has mock fixtures (`mock_rawg_games_page`, `mock_rawg_genres`, `mock_rawg_platforms`, `mock_rawg_full`) using the `responses` library — use these for offline testing without hitting the real RAWG API
 
 ## Conventions
 

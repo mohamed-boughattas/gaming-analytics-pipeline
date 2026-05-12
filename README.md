@@ -185,7 +185,7 @@ gaming-analytics-pipeline/
 │   │   ├── __init__.py
 │   │   ├── __main__.py            # Module entry point
 │   │   ├── checks.py              # Soda Core + SQLMesh checks
-│   │   ├── checks/                # Soda contract YAML files
+│   │   ├── checks/                # Soda contract YAML files (raw/ staging/ marts)
 │   │   └── data_source.yaml       # Soda data source config
 │
 ├── marimo/                        # Marimo reactive dashboard
@@ -205,8 +205,6 @@ gaming-analytics-pipeline/
 ├── docs/                          # Documentation
 │   ├── adr/                       # Architecture Decision Records
 │   ├── images/                    # Diagrams and images
-│   │   └── diagram.png            # Architecture diagram
-│   └── data-flow.md              # Data flow documentation
 │
 ├── data/                          # DuckDB database files (gitignored)
 ├── htmlcov/                       # Test coverage reports (gitignored)
