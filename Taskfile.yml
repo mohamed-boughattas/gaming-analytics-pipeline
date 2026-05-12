@@ -110,7 +110,7 @@ tasks:
     desc: Start Evidence dashboard (Node 22 required)
     dir: evidence
     cmds:
-      - bash -c 'eval "$(fnm env)" && fnm use 22 && npm run dev'
+      - bash -c 'if command -v fnm &>/dev/null; then eval "$(fnm env)" && fnm use 22; fi && npm run dev'
 
   # === Database ===
 
