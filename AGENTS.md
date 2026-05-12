@@ -69,7 +69,6 @@ SQLMesh model locations:
 
 ## Important Gotchas
 
-- Python 3.12–3.13 only (`>=3.12,<3.14`)
 - Marimo must bind to `0.0.0.0` with `--no-token`
 - sqlfluff enforces `capitalisation = lower` — all SQL keywords must be lowercase
 - sqlfluff uses `templater = raw` (SQLMesh uses custom Jinja-like syntax, not sqlfluff templates)
@@ -77,8 +76,10 @@ SQLMesh model locations:
 - Evidence requires Node 22 (use `fnm use 22` or `task evidence` handles this)
 - SQLMesh gateway name is `local` (not `duckdb`); database path in `sqlmesh.yaml` is **absolute** — must be updated per developer
 - SQLMesh tests are `.sql` files in `sqlmesh/tests/` using `-- Expected: 0` assertion pattern, run via `task sqlmesh-test` (not pytest)
+- SQLMesh model default dialect is `duckdb` — all models must use DuckDB-compatible SQL
 - Soda quality uses `verify_contract_locally` (Soda Core v4 contract API), not SodaCL scan files
 - Soda `data_source.yaml` uses relative path — `task soda-scan` must run from repo root
+- `task soda-scan` runs both Soda contract checks AND SQLMesh native tests (not just Soda)
 - bare `pytest` runs with coverage by default (pyproject.toml `addopts`); use `task test` for fast runs or `pytest --no-cov` explicitly
 - yamllint ignores `.github/` and `sqlmesh/` — CI YAML and SQLMesh config are not linted by yamllint
 - `lint` already includes `S` (security) rules via ruff config; `lint-security` is a redundant explicit pass — both run in `lint-full`
@@ -90,3 +91,4 @@ SQLMesh model locations:
 - **Docstrings**: Google-style
 - **Type hints**: Required; use `ty` (astral-sh/ty), not mypy
 - **DuckDB paths**: Use `read_only=True` for concurrent read access
+- **Config module**: exports both `settings` and `config` (alias to same singleton); `config` is preferred
