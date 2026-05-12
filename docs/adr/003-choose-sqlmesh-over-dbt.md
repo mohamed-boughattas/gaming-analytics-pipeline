@@ -41,15 +41,6 @@ While dbt is the industry standard with a larger ecosystem, for this project:
 - Less native support for the workflow patterns we need
 - Heavier infrastructure requirements
 
-### Specific Use Case Considerations
-
-For a gaming analytics portfolio project with DuckDB:
-
-- SQLMesh provides better DuckDB integration out of the box
-- More modern architecture with Python 3.12 support
-- Better demonstrates understanding of newer data engineering tools
-- Simpler local development experience
-
 ## Consequences
 
 - **Positive**: Better DuckDB integration and performance
@@ -57,7 +48,7 @@ For a gaming analytics portfolio project with DuckDB:
 - **Positive**: Modern, Pythonic approach to transformations
 - **Neutral**: Smaller community and fewer third-party integrations
 - **Negative**: Less ecosystem and fewer pre-built packages
-- **Neutral**: Less familiarity in the job market (but demonstrates forward-thinking)
+- **Neutral**: Less familiarity in the job market
 
 ## Alternatives Considered
 

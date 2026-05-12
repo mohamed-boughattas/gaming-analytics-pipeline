@@ -9,7 +9,7 @@ Accepted
 We needed to select a database for storing and analyzing gaming data from the RAWG API. The primary use cases include:
 
 - Storing raw API responses
-- Running analytical queries for marimos
+- Running analytical queries for Marimo
 - Supporting development and testing workflows
 - Potential cloud deployment options
 

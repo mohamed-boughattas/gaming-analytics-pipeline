@@ -88,7 +88,7 @@ Implement **dual dashboards** with distinct purposes:
 
 ### Mitigation
 - Shared `marts` layer ensures data consistency
-- Node version managed via `fnm` (documented in justfile)
+- Node version managed via `fnm` (documented in Taskfile.yml)
 - Unified color scheme and metrics
 
 ## Alternatives Considered
