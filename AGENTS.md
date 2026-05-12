@@ -74,7 +74,7 @@ SQLMesh model locations:
 - sqlfluff uses `templater = raw` (SQLMesh uses custom Jinja-like syntax, not sqlfluff templates)
 - `.env` is gitignored; copy from `.env.example`
 - Evidence requires Node 22 (use `fnm use 22` or `task evidence` handles this)
-- SQLMesh gateway name is `local` (not `duckdb`); database path in `sqlmesh.yaml` is **absolute** — must be updated per developer
+- SQLMesh gateway name is `local` (not `duckdb`); database path in `sqlmesh.yaml` is relative (`../data/gaming_analytics.duckdb` from `sqlmesh/`)
 - SQLMesh tests are `.sql` files in `sqlmesh/tests/` using `-- Expected: 0` assertion pattern, run via `task sqlmesh-test` (not pytest)
 - SQLMesh model default dialect is `duckdb` — all models must use DuckDB-compatible SQL
 - Soda quality uses `verify_contract_locally` (Soda Core v4 contract API), not SodaCL scan files

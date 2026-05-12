@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 import dlt
+import duckdb
 from dlt.common.destination import Destination
 from pendulum import now as pendulum_now
 
@@ -82,11 +83,26 @@ class GamingPipeline:
 
             self.pipeline.run(source)
 
-            stats: dict[str, Any] = {
-                "total_games": 0,
-                "genres": 0,
-                "platforms": 0,
-            }
+            try:
+                with duckdb.connect(config.database.path, read_only=True) as conn:
+                    games_query = "SELECT COUNT(*) FROM raw.games"
+                    genres_query = "SELECT COUNT(*) FROM raw.genres"
+                    platforms_query = "SELECT COUNT(*) FROM raw.platforms"
+                    games_row = conn.execute(games_query).fetchone()
+                    genres_row = conn.execute(genres_query).fetchone()
+                    platforms_row = conn.execute(platforms_query).fetchone()
+                    stats = {
+                        "total_games": games_row[0] if games_row else 0,
+                        "genres": genres_row[0] if genres_row else 0,
+                        "platforms": platforms_row[0] if platforms_row else 0,
+                    }
+            except Exception:
+                stats = {
+                    "total_games": 0,
+                    "genres": 0,
+                    "platforms": 0,
+                    "note": "Row count read failed",
+                }
 
             logger.info("RAWG data load complete")
             return stats
