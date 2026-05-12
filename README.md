@@ -29,9 +29,52 @@ This pipeline provides end-to-end data engineering capabilities for gaming analy
 
 ![Architecture Diagram](docs/images/diagram.png)
 
-## 📈 Data Lineage
+## 📈 Data Flow
 
-For detailed documentation of data flow and transformations, see [docs/data-flow.md](docs/data-flow.md).
+```mermaid
+graph LR
+    A[RAWG API] --> B[dlt Ingestion]
+    B --> C[raw.games]
+    B --> D[raw.genres]
+    B --> E[raw.platforms]
+    C --> C1[raw.games__genres]
+    C --> C2[raw.games__platforms]
+    C1 --> F1[fct_genres]
+    C2 --> F2[fct_platforms]
+
+    C --> F[staging.stg_games]
+    D --> G[staging.stg_genres]
+    E --> H[staging.stg_platforms]
+
+    F --> I[marts.fct_games]
+    G --> J[marts.fct_genres]
+    H --> K[marts.fct_platforms]
+
+    I --> L[Marimo<br/>:2718]
+    J --> L
+    K --> L
+    I --> M[Evidence<br/>static HTML]
+    J --> M
+    K --> M
+
+    style A fill:#f9f,stroke:#333
+    style B fill:#bbf,stroke:#333
+    style C fill:#9ff,stroke:#333
+    style C1 fill:#9ff,stroke:#333
+    style C2 fill:#9ff,stroke:#333
+    style D fill:#9ff,stroke:#333
+    style E fill:#9ff,stroke:#333
+    style F fill:#fbf,stroke:#333
+    style F1 fill:#bfb,stroke:#333
+    style F2 fill:#bfb,stroke:#333
+    style G fill:#fbf,stroke:#333
+    style H fill:#fbf,stroke:#333
+    style I fill:#bfb,stroke:#333
+    style J fill:#bfb,stroke:#333
+    style K fill:#bfb,stroke:#333
+    style L fill:#fbf,stroke:#333
+    style M fill:#ff9,stroke:#333
+```
 
 ## 🛠️ Tool Selection & Trade-offs
 
@@ -229,6 +272,41 @@ Get your API keys:
 - `marts.fct_genres`: Aggregated genre statistics using JOINs to `raw.games__genres`
 - `marts.fct_platforms`: Aggregated platform statistics using JOINs to `raw.games__platforms`
 
+### Key Transformations
+
+Games pipeline stages and their SQLMesh model materializations:
+
+| Stage       | Table               | Key Transformations                                      | Materialization |
+|-------------|---------------------|----------------------------------------------------------|-----------------|
+| Ingestion   | raw.games           | Schema inference, nested JSON normalization into child tables | Append/upsert   |
+| Staging     | staging.stg_games   | `TRY_CAST` for dates/numbers, NULL handling             | View            |
+| Mart        | marts.fct_games     | Rating categories, engagement score, date extraction     | View            |
+
+**Engagement score formula** (marts.fct_games):
+
+```sql
+COALESCE(rating, 0) * 0.4 + COALESCE(ratings_count, 0) / 100.0 * 0.6 AS engagement_score
+```
+
+Weights: 40% user rating + 60% community engagement (ratings count).
+
+**Genre/Platform aggregations** (marts.fct_genres, marts.fct_platforms) use JOINs to dlt's normalized child tables:
+
+```sql
+FROM raw.games__genres gg
+JOIN raw.games gm ON gg._dlt_root_id = gm._dlt_id
+```
+
+### Refresh Strategy
+
+| Table              | Write Disposition | Refresh                                   |
+|--------------------|--------------------|-------------------------------------------|
+| raw.games          | merge              | Incremental (by `updated` field) or full  |
+| raw.genres         | replace            | On-demand (full reload)                   |
+| raw.platforms      | replace            | On-demand (full reload)                   |
+| staging.*          | —                  | Recomputes on each query                  |
+| marts.*            | —                  | Recomputes on each query                  |
+
 ## 🧪 Testing
 
 Run all tests (fast, no coverage):
@@ -275,18 +353,35 @@ Or run directly:
 uv run python -m gaming_pipeline.quality
 ```
 
+### SQLMesh Tests
+
+SQLMesh native tests validate business logic (8 tests in `sqlmesh/tests/`):
+
+| Test | Validates |
+|------|-----------|
+| `test_no_future_release_dates.sql` | No release dates in the future |
+| `test_no_null_game_names.sql` | All games have names |
+| `test_rating_ranges.sql` | Ratings in 0–5 range |
+| `test_engagement_score_positive.sql` | Engagement score ≥ 0 |
+| `test_fct_genres_no_null_names.sql` | All genres have names |
+| `test_fct_genres_valid_ranges.sql` | Genre aggregations in valid range |
+| `test_fct_platforms_no_null_names.sql` | All platforms have names |
+| `test_fct_platforms_valid_ranges.sql` | Platform aggregations in valid range |
+
+Run with: `task sqlmesh-test`
+
 ### Marimo Dashboard Overview
 
 Interactive dashboard for data exploration:
 
 ```bash
-marimo edit marimo/gaming_analytics.py --no-token
+uv run marimo edit marimo/gaming_analytics.py --no-token
 ```
 
 Or run dashboard server:
 
 ```bash
-marimo edit marimo/gaming_analytics.py --headless --host 0.0.0.0 --port 2718 --no-token
+uv run marimo edit marimo/gaming_analytics.py --headless --host 0.0.0.0 --port 2718 --no-token
 ```
 
 **Note**: Use `--host 0.0.0.0` (not `localhost`) for network access and `--no-token` to disable cloud auth prompts.
