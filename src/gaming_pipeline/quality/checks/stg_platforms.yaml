@@ -1,0 +1,34 @@
+# Soda v4 contract for staging.stg_platforms table
+
+dataset: gaming_analytics/staging/stg_platforms
+
+columns:
+  - name: id
+    checks:
+      - missing:
+      - duplicate:
+
+  - name: name
+    checks:
+      - missing:
+
+  - name: slug
+    checks:
+      - missing:
+
+  - name: games_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: image_background
+
+  - name: year_start
+    checks:
+      - invalid:
+          valid_min: 0
+
+checks:
+  - row_count:
+      name: Staging platforms has data
+      must_be_greater_than: 0

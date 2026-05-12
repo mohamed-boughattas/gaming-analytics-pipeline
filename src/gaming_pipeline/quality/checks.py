@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 CONTRACT_FILES: dict[str, list[str]] = {
     "raw": ["raw_games.yaml", "raw_genres.yaml", "raw_platforms.yaml"],
+    "staging": ["stg_games.yaml", "stg_genres.yaml", "stg_platforms.yaml"],
     "marts": ["fct_games.yaml", "fct_genres.yaml", "fct_platforms.yaml"],
 }
 
@@ -221,7 +222,7 @@ def run_quality_checks(layer: str = "marts") -> dict[str, Any]:
     """Run unified data quality validation (SQLMesh + Soda).
 
     Args:
-        layer: The data layer to check ('raw' or 'marts').
+        layer: The data layer to check ('raw', 'staging', or 'marts').
 
     Returns:
         Dictionary with SQLMesh results, Soda results, and overall status.

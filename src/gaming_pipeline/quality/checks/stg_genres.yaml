@@ -1,0 +1,33 @@
+# Soda v4 contract for staging.stg_genres table
+
+dataset: gaming_analytics/staging/stg_genres
+
+columns:
+  - name: id
+    checks:
+      - missing:
+      - duplicate:
+
+  - name: name
+    checks:
+      - missing:
+
+  - name: slug
+    checks:
+      - missing:
+      - invalid:
+          valid_format:
+            name: Slug format (lowercase hyphens)
+            regex: "^[a-z0-9]+(-[a-z0-9]+)*$"
+
+  - name: games_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: image_background
+
+checks:
+  - row_count:
+      name: Staging genres has data
+      must_be_greater_than: 0

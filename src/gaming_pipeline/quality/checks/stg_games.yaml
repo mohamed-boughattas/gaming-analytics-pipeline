@@ -1,0 +1,71 @@
+# Soda v4 contract for staging.stg_games table
+
+dataset: gaming_analytics/staging/stg_games
+
+columns:
+  - name: id
+    checks:
+      - missing:
+      - duplicate:
+
+  - name: name
+    checks:
+      - missing:
+
+  - name: released
+
+  - name: background_image
+
+  - name: rating
+    checks:
+      - invalid:
+          valid_min: 0
+          valid_max: 5
+
+  - name: rating_top
+    checks:
+      - invalid:
+          valid_max: 5
+
+  - name: ratings_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: reviews_text_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: added
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: playtime
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: suggestions_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: updated
+
+  - name: reviews_count
+    checks:
+      - invalid:
+          valid_min: 0
+
+  - name: saturated_color
+
+  - name: dominant_color
+
+  - name: _dlt_id
+
+checks:
+  - row_count:
+      name: Staging games has data
+      must_be_greater_than: 0
