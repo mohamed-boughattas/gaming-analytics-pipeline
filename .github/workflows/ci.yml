@@ -47,6 +47,9 @@ jobs:
       - name: Validate SQLMesh models
         run: cd sqlmesh && uv run sqlmesh lint
 
+      - name: Run SQLMesh tests
+        run: cd sqlmesh && uv run sqlmesh test
+
       - name: Lint YAML files
         run: uv run yamllint . -d .yamllint
 
