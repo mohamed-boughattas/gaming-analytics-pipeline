@@ -9,7 +9,6 @@ Accepted
 We needed to select a data transformation tool for managing SQL-based transformations. Requirements include:
 
 - SQL-based transformation language
-- Support for incremental loads
 - Data versioning and lineage
 - Local development experience
 - Integration with DuckDB
@@ -28,8 +27,7 @@ We selected **SQLMesh** as our transformation tool over dbt.
 4. **Integrated Planning**: Built-in deployment planning and validation
 5. **Python Integration**: Better Python integration for custom transformations
 6. **State Management**: More sophisticated state handling and dependencies
-7. **Incremental Updates**: Better support for incremental materialization strategies
-8. **Schema Evolution**: Better handling of schema changes over time
+7. **Schema Evolution**: Better handling of schema changes over time
 
 ### Why Not dbt?
 
